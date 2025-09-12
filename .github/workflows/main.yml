@@ -14,24 +14,25 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+
       - name: Build containers
-        run: docker-compose -f docker-compose.yml build
+        run: docker compose -f docker-compose.yml build
 
       - name: Run containers
-        run: docker-compose -f docker-compose.yml up -d
+        run: docker compose -f docker-compose.yml up -d
 
       - name: Run client tests
         run: |
-          docker-compose exec client npm install
-          docker-compose exec client npm test || true
+          docker compose exec client npm install
+          docker compose exec client npm test || true
 
       - name: Run server tests
         run: |
-          docker-compose exec server npm install
-          docker-compose exec server npm test || true
+          docker compose exec server npm install
+          docker compose exec server npm test || true
 
       - name: Stop containers
-        run: docker-compose -f docker-compose.yml down
+        run: docker compose -f docker-compose.yml down
 
   deploy:
     needs: build-test
@@ -47,5 +48,5 @@ jobs:
           script: |
             cd /path/to/your/project
             git pull origin main
-            docker-compose pull
-            docker-compose up -d
+            docker compose pull
+            docker compose up -d
