@@ -2,13 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import MonacoEditor from '@monaco-editor/react';
 import ReactMarkdown from 'react-markdown';
 
-
-
 function getExerciseFromPath() {
   const match = window.location.pathname.match(/^\/exercises\/([^\/]+)/);
+
+  // If cannot match, log it
+  console.error('No exercise found for path:', window.location.pathname);
+
   return match ? match[1] : null;
 }
-
 
 export default function App() {
   const [tabs, setTabs] = useState([]);

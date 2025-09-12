@@ -16,11 +16,9 @@ COPY server ./server
 # Install dependencies
 RUN cd client && npm install && cd ../server && npm install
 
-# Build React app
-RUN cd client && npm run build
+# Expose dev ports
+EXPOSE 5173
+EXPOSE 3000
 
-# Expose port 80
-EXPOSE 80
-
-# Start server (serves React build and API)
-CMD ["node", "server/index.js"]
+# Default command will be overridden by docker-compose
+CMD ["sleep", "infinity"]

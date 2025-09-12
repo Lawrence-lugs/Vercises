@@ -7,7 +7,7 @@ const { exec } = require('child_process');
 const listExercises = require('./listExercises');
 
 const app = express();
-const PORT = 80;
+const PORT = 3000;
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));

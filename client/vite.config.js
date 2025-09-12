@@ -7,9 +7,10 @@ export default defineConfig({
     outDir: '../server/public',
   },
   server: {
-    port: 3000,
+    port: 5173,
+    host: true,
     proxy: {
-      '/api': 'http://localhost:80',
+      '/api': 'http://server:3000',
     },
   },
 });
