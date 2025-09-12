@@ -84,7 +84,8 @@ export default function App() {
   const bg = '#1e1e1e';
   const border = '#2c2c32';
   const text = '#d4d4d4';
-  const accent = '#007acc';
+//   const accent = '#007acc';
+  const accent = '#cc7400ff';
 
   return (
     <div style={{ height: '100vh', width: '100vw', background: bg, color: text, fontFamily: 'Segoe UI, sans-serif', display: 'flex', position: 'relative', overflow: 'hidden' }}>
@@ -110,7 +111,7 @@ export default function App() {
             theme="vs-dark"
             language="verilog"
             value={tabs[activeTab].content}
-            options={{ fontFamily: 'Fira Mono, monospace', fontSize: 16, minimap: { enabled: false } }}
+            options={{ fontFamily: 'Cascadia Code, Fira Mono, monospace', fontSize: 16, minimap: { enabled: false } }}
             onChange={val => {
               const newTabs = [...tabs];
               newTabs[activeTab].content = val;

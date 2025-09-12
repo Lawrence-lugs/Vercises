@@ -25,12 +25,12 @@ app.get(/^\/(?!api\/|public\/).*/, (req, res) => {
 // Serve exercise files and instructions
 app.get('/api/exercise/:exercise', async (req, res) => {
   const exercise = req.params.exercise;
-  const exDir = path.join(process.cwd(), 'exercises', exercise);
+  const exDir = path.join('/app/exercises', exercise);
 
   console.log('Attempting to serve exercise from path:', exDir);
 
-  if (!fs.existsSync(path.join(process.cwd(), 'exercises'))) {
-    console.error('Exercises directory does not exist:', path.join(process.cwd(), 'exercises'));
+  if (!fs.existsSync(path.join('/app/exercises'))) {
+    console.error('Exercises directory does not exist:', path.join('/app/exercises'));
     return res.status(500).json({ error: 'Exercises directory not found on server' });
   }
 
@@ -55,12 +55,14 @@ app.post('/api/simulate', async (req, res) => {
   const { files, simCmd } = req.body;
   const util = require('util');
   const execPromise = util.promisify(exec);
-  const workDir = path.join(__dirname, 'tmp');
+  const workDir = path.join('/tmp','vercises-tmp');
   if (!fs.existsSync(workDir)) fs.mkdirSync(workDir);
   // Write files
   for (const file of files) {
     fs.writeFileSync(path.join(workDir, file.name), file.content);
   }
+
+  console.log('Am a live code update again');
 
   let output = '';
   let runCommand = './a.out'; // Default output executable for iverilog

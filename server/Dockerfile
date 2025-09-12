@@ -5,9 +5,10 @@ RUN apt-get update && \
     apt-get install -y iverilog verilator && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-COPY . .
+WORKDIR /app/server
 
+COPY package*.json ./
 RUN npm install
+
 EXPOSE 3000
-CMD ["npm", "run", "dev"]
+CMD ["npx", "nodemon", "index.js"]

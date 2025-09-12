@@ -9,12 +9,17 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    allowedHosts: ['lugs-ideapad'],
     proxy: {
       '/api': {
         target: 'http://server:3000',
         changeOrigin: true,
         secure: false,
       },
+    },
+    watch: {
+      usePolling: true,
+      interval: 100, // ms, adjust as needed
     },
   },
 });
