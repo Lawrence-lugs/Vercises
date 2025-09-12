@@ -1,0 +1,131 @@
+/* Styles for App.jsx */
+
+/* Add your styles here. Example:
+.app-container {
+  padding: 2rem;
+  background: #f9f9f9;
+}
+*/
+
+.app-container {
+  height: 100vh;
+  width: 100vw;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+
+.editor-pane {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 2px solid #2c2c32;
+  background: #1e1e1e;
+}
+
+.tab-bar {
+  display: flex;
+  border-bottom: 1px solid #2c2c32;
+}
+
+.tab-btn {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+}
+.tab-btn.active {
+  font-weight: bold;
+  background: #2c2c32;
+  border-bottom: 2px solid #cc7400ff;
+}
+
+.divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 10;
+  background: #2c2c32;
+}
+
+.instructions-pane {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  padding: 24px;
+  overflow-y: auto;
+  background: #1e1e1e;
+  color: #d4d4d4;
+}
+
+.instructions-title {
+  font-family: 'Segoe UI';
+  color: #cc7400ff;
+}
+.instructions-markdown {
+  font-family: 'Segoe UI';
+  font-size: 18px;
+}
+.md-h1, .md-h2, .md-h3 {
+  color: #cc7400ff;
+  font-family: 'Segoe UI';
+}
+.md-p, .md-li {
+  font-family: 'Segoe UI';
+}
+.md-code {
+  background: #252526;
+  color: #dcdcaa;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: 'Fira Mono', monospace;
+}
+.sim-title {
+  color: #cc7400ff;
+  margin-top: 32px;
+}
+.sim-input {
+  width: 100%;
+  background: #2c2c32;
+  color: #d4d4d4;
+  border: 1px solid #cc7400ff;
+  font-family: 'Fira Mono', monospace;
+  font-size: 16px;
+  padding: 8px;
+  border-radius: 4px;
+}
+.run-btn {
+  margin-top: 12px;
+  background: #cc7400ff;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-family: 'Segoe UI';
+  font-weight: bold;
+  cursor: pointer;
+}
+.output-title {
+  color: #cc7400ff;
+  margin-top: 32px;
+}
+.output-pre {
+  background: #252526;
+  color: #dcdcaa;
+  padding: 12px;
+  border-radius: 4px;
+  font-family: 'Fira Mono', monospace;
+  font-size: 15px;
+}
