@@ -22,7 +22,3 @@ An Exercism-like platform for Verilog coding exercises.
 ## Customization
 - Add new exercises by editing the Markdown instructions and code tabs in the UI.
 - Change simulation command to use `iverilog` or `verilator` as needed.
-
----
-
-**Note:** This is a starter template. You can extend it with authentication, exercise management, and more as needed.
