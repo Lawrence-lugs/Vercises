@@ -53,24 +53,52 @@ app.get('/api/exercise/:exercise', async (req, res) => {
 
 app.post('/api/simulate', async (req, res) => {
   const { files, simCmd } = req.body;
+  const util = require('util');
+  const execPromise = util.promisify(exec);
   const workDir = path.join(__dirname, 'tmp');
   if (!fs.existsSync(workDir)) fs.mkdirSync(workDir);
   // Write files
   for (const file of files) {
     fs.writeFileSync(path.join(workDir, file.name), file.content);
   }
-  // Run simulation
-  exec(simCmd, { cwd: workDir }, (err, stdout, stderr) => {
-    let output = '';
-    if (err) output += `Error: ${err.message}\n`;
+
+  let output = '';
+  let runCommand = './a.out'; // Default output executable for iverilog
+  let compilationFailed = false;
+
+  try {
+    // Run simulation (compile)
+    const { stdout, stderr } = await execPromise(simCmd, { cwd: workDir });
     output += stdout;
     output += stderr;
-    // Clean up
-    for (const file of files) {
-      fs.unlinkSync(path.join(workDir, file.name));
+  } catch (err) {
+    output += `Error: ${err.message}\n`;
+    compilationFailed = true;
+  }
+
+  // Print the contents of the temporary directory for debugging
+  console.log('Temporary directory contents:', fs.readdirSync(workDir));
+
+  if (!compilationFailed && fs.existsSync(path.join(workDir, 'a.out'))) {
+    try {
+      const { stdout, stderr } = await execPromise(runCommand, { cwd: workDir });
+      output += stdout;
+      output += stderr;
+    } catch (err) {
+      output += `Error: ${err.message}\n`;
     }
-    res.json({ output });
-  });
+  } else {
+    output += 'Simulation command failed, skipping execution.\n';
+  }
+  res.json({ output });
+  for (const file of files) {
+    fs.unlinkSync(path.join(workDir, file.name));
+  }
+  // Optionally, clean up a.out
+  if (fs.existsSync(path.join(workDir, 'a.out'))) {
+    fs.unlinkSync(path.join(workDir, 'a.out'));
+  }
+
 });
 
 app.listen(PORT, () => {
