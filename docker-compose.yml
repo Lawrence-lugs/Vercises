@@ -17,6 +17,7 @@ services:
     volumes:
       - ./server:/app/server
       - /app/server/node_modules
+      - ./exercises:/app/exercises
     ports:
       - "3000:3000"
     command: ["npm", "run", "dev"]

@@ -25,8 +25,17 @@ app.get(/^\/(?!api\/|public\/).*/, (req, res) => {
 // Serve exercise files and instructions
 app.get('/api/exercise/:exercise', async (req, res) => {
   const exercise = req.params.exercise;
-  const exDir = path.join(__dirname, '..', 'exercises', exercise);
+  const exDir = path.join(process.cwd(), 'exercises', exercise);
+
+  console.log('Attempting to serve exercise from path:', exDir);
+
+  if (!fs.existsSync(path.join(process.cwd(), 'exercises'))) {
+    console.error('Exercises directory does not exist:', path.join(process.cwd(), 'exercises'));
+    return res.status(500).json({ error: 'Exercises directory not found on server' });
+  }
+
   if (!fs.existsSync(exDir)) return res.status(404).json({ error: 'Exercise not found' });
+
   const files = [];
   let instructions = '';
   for (const fname of fs.readdirSync(exDir)) {

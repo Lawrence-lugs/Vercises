@@ -1,12 +1,18 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import MonacoEditor from '@monaco-editor/react';
 import ReactMarkdown from 'react-markdown';
 
 function getExerciseFromPath() {
+  console.log('Trying to get exercise from current path:', window.location.pathname);
   const match = window.location.pathname.match(/^\/exercises\/([^\/]+)/);
 
   // If cannot match, log it
-  console.error('No exercise found for path:', window.location.pathname);
+  if (!match) {
+    console.error('!!! No exercise found for path:', window.location.pathname);
+  } else {
+    console.log('!!! Loaded exercise:', match[1]);
+  }
 
   return match ? match[1] : null;
 }

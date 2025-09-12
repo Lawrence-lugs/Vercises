@@ -1,5 +1,5 @@
 FROM node:20-bullseye
-WORKDIR /app
+WORKDIR /app/client
 COPY . .
 RUN npm install
 EXPOSE 5173
