@@ -11,14 +11,26 @@ An Exercism-like platform for Verilog coding exercises.
 - Accessible from [localhost](http://localhost) for Tailscale
 
 ## Usage
-1. Build and run the Docker container:
+1. Clone the repository
    ```sh
-   docker build -t vercises .
-   docker run -p 80:80 vercises
+   git clone https://github.com/Lawrence-lugs/Vercises.git
    ```
-2. Open [http://localhost](http://localhost) in your browser.
-3. Edit code, instructions, and simulation command as needed. Click Run to simulate.
+2. Build and run the Docker container:
+   ```sh
+   docker-compose build
+   docker-compose up
+   ```
+3. Open [http://localhost/exercises](http://localhost/exercises) in your browser.
+4. Choose an exercise.
 
-## Customization
-- Add new exercises by editing the Markdown instructions and code tabs in the UI.
-- Change simulation command to use `iverilog` or `verilator` as needed.
+## Adding Exercises
+
+1. Make a folder with the name of your new exercise
+2. Add verilog files into `exercises/<exercisename>`
+3. Add an `instructions.md` (markdown file containing the exercise instructions)
+
+The app should immediately be able to detect this new exercise.
+
+## Notes
+
+- Always put in the images in the same folder as `instructions.md` if you want to add images.
