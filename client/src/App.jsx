@@ -19,13 +19,17 @@ function getExerciseFromPath() {
 }
 
 export default function App() {
+  const [runCooldown, setRunCooldown] = useState(false);
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
   const [instructions, setInstructions] = useState('');
   const [simArgs, setSimArgs] = useState('');
   const [output, setOutput] = useState('');
-  const [dividerX, setDividerX] = useState(window.innerWidth / 2);
+  const [dividerX, setDividerX] = useState(window.innerWidth * 0.5);
+  const [dividerY, setDividerY] = useState(window.innerHeight * 0.6);
+  const [outputAnim, setOutputAnim] = useState(false);
   const dragging = useRef(false);
+  const draggingY = useRef(false);
 
   // Simple client-side routing for /exercises
   const pathname = window.location.pathname;
@@ -60,6 +64,8 @@ export default function App() {
   }, [window.location.pathname]);
 
   const handleRun = async () => {
+    if (runCooldown) return;
+    setRunCooldown(true);
     const files = tabs.map(tab => ({ name: tab.name, content: tab.content }));
     const simCmd = `iverilog ${simArgs}`;
     const res = await fetch('/api/simulate', {
@@ -68,15 +74,22 @@ export default function App() {
       body: JSON.stringify({ files, simCmd }),
     });
     const data = await res.json();
+    setOutputAnim(false); // reset animation
     setOutput(data.output);
+    setTimeout(() => setOutputAnim(true), 10); // trigger animation
+    setTimeout(() => setRunCooldown(false), 1000); // 1 second cooldown
   };
 
   // Divider drag logic
-  const handleMouseDown = () => { dragging.current = true; };
+  const handleMouseDownX = () => { dragging.current = 'x'; };
+  const handleMouseDownY = () => { dragging.current = 'y'; };
   const handleMouseUp = () => { dragging.current = false; };
   const handleMouseMove = e => {
-    if (dragging.current) {
-      setDividerX(e.clientX);
+    if (dragging.current === 'x') {
+      setDividerX(Math.max(200, Math.min(e.clientX, window.innerWidth - 400)));
+    }
+    if (dragging.current === 'y') {
+      setDividerY(Math.max(200, Math.min(e.clientY, window.innerHeight - 200)));
     }
   };
   useEffect(() => {
@@ -88,14 +101,10 @@ export default function App() {
     };
   });
 
-  // VSCode dark theme colors
-  // Colors now in CSS
-
   return (
-    <div className="app-container">
-      {/* ...existing code... */}
-      {/* Editor and instructions UI unchanged */}
-      <div className="editor-pane" style={{ width: dividerX }}>
+    <div className="app-container" style={{ position: 'relative', height: '100vh', width: '100vw' }}>
+      {/* Editor panel (left half) */}
+      <div className="editor-pane" style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: dividerX }}>
         <div className="tab-bar">
           {tabs.map((tab, i) => (
             <button
@@ -120,15 +129,15 @@ export default function App() {
           />
         )}
       </div>
-      {/* Divider */}
+      {/* Vertical divider between editor and right panels */}
       <div
         className="divider"
-        style={{ left: dividerX - 3 }}
-        onMouseDown={handleMouseDown}
+        style={{ left: dividerX - 3, top: 0, bottom: 0, width: '6px', cursor: 'col-resize', position: 'absolute', background: '#2c2c32', zIndex: 10 }}
+        onMouseDown={handleMouseDownX}
       />
-      <div className="instructions-pane" style={{ left: dividerX }}>
-        <h2 className="instructions-title">Instructions</h2>
-        <div className="instructions-markdown">
+      {/* Instructions panel (top right) */}
+      <div className="instructions-pane" style={{ position: 'absolute', left: dividerX, top: 0, width: `calc(100vw - ${dividerX}px)`, height: dividerY, overflow: 'auto', background: '#23272e', color: '#d4d4d4' }}>
+        <div className="instructions-markdown" style={{ height: '100%', overflowY: 'auto' }}>
           <ReactMarkdown
             components={{
               h1: ({node, ...props}) => <h1 className="md-h1" {...props} />,
@@ -149,16 +158,26 @@ export default function App() {
             }}
           >{instructions}</ReactMarkdown>
         </div>
-        <h3 className="sim-title">Simulation Command</h3>
-        <h3 className="sim-title">IVerilog Arguments</h3>
+      </div>
+      {/* Horizontal divider between instructions and simulation */}
+      <div
+        className="divider"
+        style={{ left: dividerX, top: dividerY - 3, width: `calc(100vw - ${dividerX}px)`, height: '6px', cursor: 'row-resize', position: 'absolute', background: '#2c2c32', zIndex: 10 }}
+        onMouseDown={handleMouseDownY}
+      />
+      {/* Simulation panel (bottom right) */}
+      <div className="instructions-bg" style={{ position: 'absolute', left: dividerX, top: dividerY, width: `calc(100vw - ${dividerX}px)`, height: `calc(100vh - ${dividerY}px)`, overflowY: 'auto', background: '#302f2fff', color: '#d4d4d4', padding: '24px' }}>
+        <h1 className="md-h1">Simulation</h1>
         <input
           value={simArgs}
           onChange={e => setSimArgs(e.target.value)}
           className="sim-input"
         />
-        <button onClick={handleRun} className="run-btn">Run</button>
-        <h3 className="output-title">Output</h3>
-        <pre className="output-pre">{output}</pre>
+        <button onClick={handleRun} className="run-btn" disabled={runCooldown} style={runCooldown ? { opacity: 0.6, cursor: 'not-allowed' } : {}}>Run</button>
+        <div className="output-box">
+          <h3 className="output-title">Output</h3>
+          <pre className={`output-pre${outputAnim ? ' output-anim' : ''}`}>{output}</pre>
+        </div>
       </div>
     </div>
   );
