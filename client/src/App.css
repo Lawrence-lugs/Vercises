@@ -129,3 +129,11 @@
   font-family: 'Fira Mono', monospace;
   font-size: 15px;
 }
+
+body, html {
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-sizing: border-box;
+  background: #fff; /* or your desired background */
+}
