@@ -128,6 +128,15 @@ export default function App() {
                 p: ({node, ...props}) => <p className="md-p" {...props} />,
                 li: ({node, ...props}) => <li className="md-li" {...props} />,
                 code: ({node, ...props}) => <code className="md-code" {...props} />,
+                img: ({node, ...props}) => {
+                    const exercise = getExerciseFromPath();
+                    let src = props.src;
+                    console.log('Rendering image with original src:', src);
+                    if (!src.startsWith('/')) {
+                        src = `/exercises/${exercise}/${src}`;
+                    }
+                    return <img {...props} src={src} style={{ maxWidth: '100%', height: 'auto', maxHeight: '100%' }} />;
+                }
               }}
             >{instructions}</ReactMarkdown>
           </div>

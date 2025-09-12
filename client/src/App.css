@@ -71,19 +71,19 @@
 }
 
 .instructions-title {
-  font-family: 'Segoe UI';
+  font-family: "Segoe UI", "Helvetica Neue", Arial, "Liberation Sans", "Apple Color Emoji", sans-serif;
   color: #cc7400ff;
 }
 .instructions-markdown {
-  font-family: 'Segoe UI';
+  font-family: "Segoe UI", "Helvetica Neue", Arial, "Liberation Sans", "Apple Color Emoji", sans-serif;
   font-size: 18px;
 }
 .md-h1, .md-h2, .md-h3 {
   color: #cc7400ff;
-  font-family: 'Segoe UI';
+  font-family: "Segoe UI", "Helvetica Neue", Arial, "Liberation Sans", "Apple Color Emoji", sans-serif;
 }
 .md-p, .md-li {
-  font-family: 'Segoe UI';
+  font-family: "Segoe UI", "Helvetica Neue", Arial, "Liberation Sans", "Apple Color Emoji", sans-serif;
 }
 .md-code {
   background: #252526;
@@ -113,7 +113,7 @@
   border: none;
   padding: 10px 24px;
   border-radius: 4px;
-  font-family: 'Segoe UI';
+  font-family: "Segoe UI", "Helvetica Neue", Arial, "Liberation Sans", "Apple Color Emoji", sans-serif;
   font-weight: bold;
   cursor: pointer;
 }

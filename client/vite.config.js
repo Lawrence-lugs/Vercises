@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
-    allowedHosts: ['lugs-ideapad'],
+    allowedHosts: ['lugs-ideapad','verilog.eee.upd.edu.ph'],
     proxy: {
       '/api': {
         target: 'http://server:3000',

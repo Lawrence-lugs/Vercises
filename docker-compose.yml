@@ -7,6 +7,7 @@ services:
     volumes:
       - ./client:/app/client
       - /app/client/node_modules
+      - ./exercises:/app/client/public/exercises
     ports:
       - "5173:5173"
     command: ["npm", "run", "dev"]

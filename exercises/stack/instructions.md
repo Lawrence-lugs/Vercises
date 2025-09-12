@@ -6,4 +6,4 @@ Testing this.
 
 Let's try to put in an image.
 
-![alt text](image.png)
+![image](image.png)

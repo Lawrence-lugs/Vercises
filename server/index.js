@@ -9,6 +9,9 @@ const listExercises = require('./listExercises');
 const app = express();
 const PORT = 3000;
 
+// Expose assets in exercises folder as static files so that markdown renders properly
+app.use(express.static(path.join('/app/exercises')));
+
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
