@@ -17,6 +17,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // List all exercises
 app.get('/api/exercises', (req, res) => {
+  console.log('Listing all exercises...');
   res.json({ exercises: listExercises() });
 });
 
