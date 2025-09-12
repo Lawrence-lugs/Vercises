@@ -22,7 +22,7 @@ export default function App() {
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
   const [instructions, setInstructions] = useState('');
-  const [simCmd, setSimCmd] = useState('');
+  const [simArgs, setSimArgs] = useState('');
   const [output, setOutput] = useState('');
   const [dividerX, setDividerX] = useState(window.innerWidth / 2);
   const dragging = useRef(false);
@@ -43,9 +43,9 @@ export default function App() {
           setTabs(data.files);
           setActiveTab(0);
           setInstructions(data.instructions);
-          // Default simulation command: iverilog <all .v files>
+          // Default simulation arguments: <all .v files>
           const vfiles = data.files.filter(f => f.name.endsWith('.v')).map(f => f.name).join(' ');
-          setSimCmd(vfiles ? `iverilog ${vfiles}` : '');
+          setSimArgs(vfiles);
         });
     } else {
       // fallback demo
@@ -55,12 +55,13 @@ export default function App() {
       ]);
       setActiveTab(0);
       setInstructions(`# Build an ALU\n\nDesign an ALU that supports add, subtract, and, or operations.\n\n## Specs\n- Inputs: a, b, op\n- Outputs: result\n`);
-      setSimCmd('iverilog tb_alu.v alu.v');
+  setSimArgs('tb_alu.v alu.v');
     }
   }, [window.location.pathname]);
 
   const handleRun = async () => {
     const files = tabs.map(tab => ({ name: tab.name, content: tab.content }));
+    const simCmd = `iverilog ${simArgs}`;
     const res = await fetch('/api/simulate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -149,9 +150,10 @@ export default function App() {
           >{instructions}</ReactMarkdown>
         </div>
         <h3 className="sim-title">Simulation Command</h3>
+        <h3 className="sim-title">IVerilog Arguments</h3>
         <input
-          value={simCmd}
-          onChange={e => setSimCmd(e.target.value)}
+          value={simArgs}
+          onChange={e => setSimArgs(e.target.value)}
           className="sim-input"
         />
         <button onClick={handleRun} className="run-btn">Run</button>
