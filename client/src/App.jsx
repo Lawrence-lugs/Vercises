@@ -50,16 +50,17 @@ export default function App() {
           setTabs(data.files);
           setActiveTab(0);
           setInstructions(data.instructions);
-          setSimCmd(data.simCommand || '');
-          setRunCmd(data.runCommand || '');
-          setHiddenFiles(data.hiddenFiles || []);
-          if (data.defArgs && data.enableArgs !== false) {
-            setSimArgs(data.defArgs);
+          // Use config object from backend
+          const config = data.config || {};
+          setSimCmd(config.simulation_command || 'iverilog');
+          setRunCmd(config.run_command || './a.out');
+          setHiddenFiles(config.hidden || []);
+          if (config.default_args && config.enable_args !== false) {
+            setSimArgs(config.default_args);
           } else {
-            // Set simargs to all files 
             setSimArgs(data.files.map(f => f.name).join(' '));
           }
-          setEnableArgs(data.enableArgs !== false); // default true if not provided
+          setEnableArgs(config.enable_args !== false); // default true if not provided
         });
     } else {
       // fallback demo

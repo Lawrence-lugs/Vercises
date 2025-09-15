@@ -1,4 +1,3 @@
-
 const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
@@ -11,7 +10,6 @@ const PORT = 3000;
 
 // Expose assets in exercises folder as static files so that markdown renders properly
 app.use(express.static(path.join('/app/exercises')));
-
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -41,21 +39,11 @@ app.get('/api/exercise/:exercise', async (req, res) => {
   if (!fs.existsSync(exDir)) return res.status(404).json({ error: 'Exercise not found' });
 
   // Parse config.json
-  let hiddenFiles = [];
-  let simCommand = 'iverilog '; // Default simulation command for Verilog
-  let runCommand = './a.out';
-  let defArgs = '';
-  let enableArgs = true;
-
+  let config = {};
   const configPath = path.join(exDir, 'config.json');
   if (fs.existsSync(configPath)) {
     try {
-      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      hiddenFiles = config.hidden || [];
-      simCommand = config.simulation_command || simCommand;
-      runCommand = config.run_command || runCommand;
-      defArgs = config.default_args || '';
-      enableArgs = config.enable_args !== undefined ? config.enable_args : true;
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     } catch (err) {
       console.warn(`Warning: Could not parse config.json for exercise ${exercise}:`, err.message);
     }
@@ -68,12 +56,12 @@ app.get('/api/exercise/:exercise', async (req, res) => {
     if (fs.statSync(fpath).isFile()) {
       if (fname === 'instructions.md') {
         instructions = fs.readFileSync(fpath, 'utf8');
-      } else if ((fname.endsWith('.v') || fname.endsWith('.txt')) && !hiddenFiles.includes(fname)) {
+      } else if ((fname.endsWith('.v') || fname.endsWith('.txt')) && !(config.hidden || []).includes(fname)) {
         files.push({ name: fname, content: fs.readFileSync(fpath, 'utf8') });
       }
     }
   }
-  res.json({ files, instructions, simCommand, runCommand, defArgs, hiddenFiles, enableArgs });
+  res.json({ files, instructions, config });
 });
 
 app.post('/api/simulate', async (req, res) => {
