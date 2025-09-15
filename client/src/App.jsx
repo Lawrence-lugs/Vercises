@@ -22,6 +22,9 @@ export default function App() {
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
   const [hiddenFiles, setHiddenFiles] = useState([]);
+
+  // VCD File State
+  const vcdFile = useRef(null);
   
   // Markdown Instructions
   const [instructions, setInstructions] = useState('');
@@ -89,7 +92,9 @@ export default function App() {
   const handleRun = async () => {
     if (runCooldown) return;
     setRunCooldown(true);
+
     const files = tabs.map(tab => ({ name: tab.name, content: tab.content }));
+    
     // Fetch hidden files content if any
     if (hiddenFiles.length > 0) {
       const exercise = getExerciseFromPath();
@@ -100,6 +105,7 @@ export default function App() {
       }));
       files.push(...hiddenFileContents);
     }
+    
     const simCmdFull = `${simCmd} ${simArgs}`;
     const res = await fetch('/api/simulate', {
       method: 'POST',
@@ -107,8 +113,15 @@ export default function App() {
       body: JSON.stringify({ files, simCmd: simCmdFull, runCmd }),
     });
     const data = await res.json();
+
     setOutputAnim(false); // reset animation
     setOutput(data.output);
+
+    vcdFile.current = data.vcd || null;
+    if (vcdFile.current) {
+      console.log('Received VCD file:', vcdFile.current);
+    }
+
     setTimeout(() => setOutputAnim(true), 10); // trigger animation
     setTimeout(() => setRunCooldown(false), 1000); // 1 second cooldown
   };
