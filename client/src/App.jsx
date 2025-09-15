@@ -53,7 +53,12 @@ export default function App() {
           setSimCmd(data.simCommand || '');
           setRunCmd(data.runCommand || '');
           setHiddenFiles(data.hiddenFiles || []);
-          setSimArgs(data.defArgs || '');
+          if (data.defArgs && data.enableArgs !== false) {
+            setSimArgs(data.defArgs);
+          } else {
+            // Set simargs to all files 
+            setSimArgs(data.files.map(f => f.name).join(' '));
+          }
           setEnableArgs(data.enableArgs !== false); // default true if not provided
         });
     } else {

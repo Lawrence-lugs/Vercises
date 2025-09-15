@@ -71,14 +71,13 @@ app.get('/api/exercise/:exercise', async (req, res) => {
       } else if ((fname.endsWith('.v') || fname.endsWith('.txt')) && !hiddenFiles.includes(fname)) {
         files.push({ name: fname, content: fs.readFileSync(fpath, 'utf8') });
       }
-      
     }
   }
   res.json({ files, instructions, simCommand, runCommand, defArgs, hiddenFiles, enableArgs });
 });
 
 app.post('/api/simulate', async (req, res) => {
-  const { files, simCmd, runCmd = './a.out' } = req.body;
+  const { files, simCmd, runCmd } = req.body;
   const util = require('util');
   const execPromise = util.promisify(exec);
   const workDir = path.join('/tmp','vercises-tmp');
