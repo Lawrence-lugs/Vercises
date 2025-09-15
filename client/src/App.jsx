@@ -61,10 +61,12 @@ export default function App() {
           setSimCmd(config.simulation_command || 'iverilog');
           setRunCmd(config.run_command || './a.out');
           setHiddenFiles(config.hidden || []);
-          if (config.default_args && config.enable_args !== false) {
-            setSimArgs(config.default_args);
-          } else {
-            setSimArgs(data.files.map(f => f.name).join(' '));
+          if (config.enable_args === true) {
+            if (config.default_args) {
+              setSimArgs(config.default_args);
+            } else {
+              setSimArgs(data.files.map(f => f.name).join(' '));
+            }
           }
           setEnableArgs(config.enable_args !== false); // default true if not provided
         });
