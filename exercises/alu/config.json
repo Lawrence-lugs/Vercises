@@ -1,0 +1,4 @@
+{
+    "hidden": ["tb_alu.v","components.v"],
+    "sim_args": "iverilog tb_alu.v alu.v"
+}

@@ -59,7 +59,7 @@ export default function App() {
       ]);
       setActiveTab(0);
       setInstructions(`# Build an ALU\n\nDesign an ALU that supports add, subtract, and, or operations.\n\n## Specs\n- Inputs: a, b, op\n- Outputs: result\n`);
-  setSimArgs('tb_alu.v alu.v');
+      setSimArgs('tb_alu.v alu.v');
     }
   }, [window.location.pathname]);
 
@@ -120,7 +120,7 @@ export default function App() {
             theme="vs-dark"
             language="verilog"
             value={tabs[activeTab].content}
-            options={{ fontFamily: 'Cascadia Code, Fira Mono, monospace', fontSize: 16, minimap: { enabled: false } }}
+            options={{ fontFamily: 'Cascadia Code, Fira Mono, monospace', fontSize: 16, minimap: { enabled: true } }}
             onChange={val => {
               const newTabs = [...tabs];
               newTabs[activeTab].content = val;
@@ -137,7 +137,7 @@ export default function App() {
       />
       {/* Instructions panel (top right) */}
       <div className="instructions-pane" style={{ position: 'absolute', left: dividerX, top: 0, width: `calc(100vw - ${dividerX}px)`, height: dividerY, overflow: 'auto', background: '#23272e', color: '#d4d4d4' }}>
-        <div className="instructions-markdown" style={{ height: '100%', overflowY: 'auto' }}>
+        <div className="instructions-markdown" style={{ height: '100%', overflowY: 'auto', padding: '60px' }}>
           <ReactMarkdown
             components={{
               h1: ({node, ...props}) => <h1 className="md-h1" {...props} />,

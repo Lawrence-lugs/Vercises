@@ -40,6 +40,23 @@ app.get('/api/exercise/:exercise', async (req, res) => {
 
   if (!fs.existsSync(exDir)) return res.status(404).json({ error: 'Exercise not found' });
 
+  // Parse config.json
+  let hiddenFiles = [];
+  let simCommand = 'iverilog -o a.out *.v'; // Default simulation command for Verilog
+  let runCommand = './a.out';
+
+  const configPath = path.join(exDir, 'config.json');
+  if (fs.existsSync(configPath)) {
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      hiddenFiles = config.hidden || [];
+      simCommand = config.simulation_command || simCommand;
+      runCommand = config.run_command || runCommand;
+    } catch (err) {
+      console.warn(`Warning: Could not parse config.json for exercise ${exercise}:`, err.message);
+    }
+  }
+
   const files = [];
   let instructions = '';
   for (const fname of fs.readdirSync(exDir)) {
@@ -47,16 +64,17 @@ app.get('/api/exercise/:exercise', async (req, res) => {
     if (fs.statSync(fpath).isFile()) {
       if (fname === 'instructions.md') {
         instructions = fs.readFileSync(fpath, 'utf8');
-      } else if (fname.endsWith('.v') || fname.endsWith('.txt')) {
+      } else if ((fname.endsWith('.v') || fname.endsWith('.txt')) && !hiddenFiles.includes(fname)) {
         files.push({ name: fname, content: fs.readFileSync(fpath, 'utf8') });
       }
+      
     }
   }
-  res.json({ files, instructions });
+  res.json({ files, instructions, simCommand, runCommand });
 });
 
 app.post('/api/simulate', async (req, res) => {
-  const { files, simCmd } = req.body;
+  const { files, simCmd, runCmd = './a.out' } = req.body;
   const util = require('util');
   const execPromise = util.promisify(exec);
   const workDir = path.join('/tmp','vercises-tmp');
@@ -66,10 +84,7 @@ app.post('/api/simulate', async (req, res) => {
     fs.writeFileSync(path.join(workDir, file.name), file.content);
   }
 
-  console.log('Am a live code update again');
-
   let output = '';
-  let runCommand = './a.out'; // Default output executable for iverilog
   let compilationFailed = false;
 
   try {
@@ -87,7 +102,7 @@ app.post('/api/simulate', async (req, res) => {
 
   if (!compilationFailed && fs.existsSync(path.join(workDir, 'a.out'))) {
     try {
-      const { stdout, stderr } = await execPromise(runCommand, { cwd: workDir });
+      const { stdout, stderr } = await execPromise(runCmd, { cwd: workDir });
       output += stdout;
       output += stderr;
     } catch (err) {
