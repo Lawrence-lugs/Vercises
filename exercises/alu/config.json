@@ -1,0 +1,7 @@
+{
+    "hidden": ["tb_alu.v","components.v"],
+    "simulation_command": "iverilog tb_alu.v components.v alu.v",
+    "default_args": "",
+    "enable_args": false,
+    "run_command": "./a.out"
+}
