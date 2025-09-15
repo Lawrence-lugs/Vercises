@@ -103,12 +103,12 @@ app.post('/api/simulate', async (req, res) => {
     output += 'Simulation command failed, skipping execution.\n';
   }
   res.json({ output });
-  for (const file of files) {
-    fs.unlinkSync(path.join(workDir, file.name));
-  }
-  // Optionally, clean up a.out
-  if (fs.existsSync(path.join(workDir, 'a.out'))) {
-    fs.unlinkSync(path.join(workDir, 'a.out'));
+  
+  // Remove the entire temp directory instead of individual files
+  try {
+    fs.rmSync(workDir, { recursive: true, force: true });
+  } catch (err) {
+    console.error('Failed to remove temp directory:', err.message);
   }
 
 });
