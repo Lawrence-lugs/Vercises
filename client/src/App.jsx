@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 import MonacoEditor from '@monaco-editor/react';
@@ -28,6 +27,10 @@ export default function App() {
   const [dividerX, setDividerX] = useState(window.innerWidth * 0.5);
   const [dividerY, setDividerY] = useState(window.innerHeight * 0.6);
   const [outputAnim, setOutputAnim] = useState(false);
+  const [simCmd, setSimCmd] = useState('');
+  const [runCmd, setRunCmd] = useState('');
+  const [hiddenFiles, setHiddenFiles] = useState([]);
+  const [enableArgs, setEnableArgs] = useState(true);
   const dragging = useRef(false);
   const draggingY = useRef(false);
 
@@ -47,9 +50,11 @@ export default function App() {
           setTabs(data.files);
           setActiveTab(0);
           setInstructions(data.instructions);
-          // Default simulation arguments: <all .v files>
-          const vfiles = data.files.filter(f => f.name.endsWith('.v')).map(f => f.name).join(' ');
-          setSimArgs(vfiles);
+          setSimCmd(data.simCommand || '');
+          setRunCmd(data.runCommand || '');
+          setHiddenFiles(data.hiddenFiles || []);
+          setSimArgs(data.defArgs || '');
+          setEnableArgs(data.enableArgs !== false); // default true if not provided
         });
     } else {
       // fallback demo
@@ -59,7 +64,11 @@ export default function App() {
       ]);
       setActiveTab(0);
       setInstructions(`# Build an ALU\n\nDesign an ALU that supports add, subtract, and, or operations.\n\n## Specs\n- Inputs: a, b, op\n- Outputs: result\n`);
+      setSimCmd('iverilog');
+      setRunCmd('./a.out');
+      setHiddenFiles([]);
       setSimArgs('tb_alu.v alu.v');
+      setEnableArgs(true);
     }
   }, [window.location.pathname]);
 
@@ -67,11 +76,21 @@ export default function App() {
     if (runCooldown) return;
     setRunCooldown(true);
     const files = tabs.map(tab => ({ name: tab.name, content: tab.content }));
-    const simCmd = `iverilog ${simArgs}`;
+    // Fetch hidden files content if any
+    if (hiddenFiles.length > 0) {
+      const exercise = getExerciseFromPath();
+      const hiddenFileContents = await Promise.all(hiddenFiles.map(async fname => {
+        const res = await fetch(`/exercises/${exercise}/${fname}`);
+        const content = await res.text();
+        return { name: fname, content };
+      }));
+      files.push(...hiddenFileContents);
+    }
+    const simCmdFull = `${simCmd} ${simArgs}`;
     const res = await fetch('/api/simulate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ files, simCmd }),
+      body: JSON.stringify({ files, simCmd: simCmdFull, runCmd }),
     });
     const data = await res.json();
     setOutputAnim(false); // reset animation
@@ -168,11 +187,18 @@ export default function App() {
       {/* Simulation panel (bottom right) */}
       <div className="instructions-bg" style={{ position: 'absolute', left: dividerX, top: dividerY, width: `calc(100vw - ${dividerX}px)`, height: `calc(100vh - ${dividerY}px)`, overflowY: 'auto', background: '#302f2fff', color: '#d4d4d4', padding: '24px' }}>
         <h1 className="md-h1">Simulation</h1>
-        <input
-          value={simArgs}
-          onChange={e => setSimArgs(e.target.value)}
-          className="sim-input"
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontFamily: 'monospace', background: '#222', padding: '4px 8px', borderRadius: '4px' }}>{simCmd}</span>
+          {enableArgs && (
+            <input
+              value={simArgs}
+              onChange={e => setSimArgs(e.target.value)}
+              className="sim-input"
+              style={{ flex: 1 }}
+            />
+          )}
+          <span style={{ fontFamily: 'monospace', background: '#222', padding: '4px 8px', borderRadius: '4px' }}>{runCmd}</span>
+        </div>
         <button onClick={handleRun} className="run-btn" disabled={runCooldown} style={runCooldown ? { opacity: 0.6, cursor: 'not-allowed' } : {}}>Run</button>
         <div className="output-box">
           <h3 className="output-title">Output</h3>

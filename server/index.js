@@ -42,8 +42,10 @@ app.get('/api/exercise/:exercise', async (req, res) => {
 
   // Parse config.json
   let hiddenFiles = [];
-  let simCommand = 'iverilog -o a.out *.v'; // Default simulation command for Verilog
+  let simCommand = 'iverilog '; // Default simulation command for Verilog
   let runCommand = './a.out';
+  let defArgs = '';
+  let enableArgs = true;
 
   const configPath = path.join(exDir, 'config.json');
   if (fs.existsSync(configPath)) {
@@ -52,6 +54,8 @@ app.get('/api/exercise/:exercise', async (req, res) => {
       hiddenFiles = config.hidden || [];
       simCommand = config.simulation_command || simCommand;
       runCommand = config.run_command || runCommand;
+      defArgs = config.default_args || '';
+      enableArgs = config.enable_args !== undefined ? config.enable_args : true;
     } catch (err) {
       console.warn(`Warning: Could not parse config.json for exercise ${exercise}:`, err.message);
     }
@@ -70,7 +74,7 @@ app.get('/api/exercise/:exercise', async (req, res) => {
       
     }
   }
-  res.json({ files, instructions, simCommand, runCommand });
+  res.json({ files, instructions, simCommand, runCommand, defArgs, hiddenFiles, enableArgs });
 });
 
 app.post('/api/simulate', async (req, res) => {
