@@ -18,19 +18,25 @@ function getExerciseFromPath() {
 }
 
 export default function App() {
-  const [runCooldown, setRunCooldown] = useState(false);
+  // Editor and Files state
   const [tabs, setTabs] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
+  const [hiddenFiles, setHiddenFiles] = useState([]);
+  
+  // Markdown Instructions
   const [instructions, setInstructions] = useState('');
+  
+  // Simulation state
+  const [simCmd, setSimCmd] = useState('');
+  const [enableArgs, setEnableArgs] = useState(true);
   const [simArgs, setSimArgs] = useState('');
+  const [runCmd, setRunCmd] = useState('');
+  const [runCooldown, setRunCooldown] = useState(false);
   const [output, setOutput] = useState('');
+  const [outputAnim, setOutputAnim] = useState(false);
+  
   const [dividerX, setDividerX] = useState(window.innerWidth * 0.5);
   const [dividerY, setDividerY] = useState(window.innerHeight * 0.6);
-  const [outputAnim, setOutputAnim] = useState(false);
-  const [simCmd, setSimCmd] = useState('');
-  const [runCmd, setRunCmd] = useState('');
-  const [hiddenFiles, setHiddenFiles] = useState([]);
-  const [enableArgs, setEnableArgs] = useState(true);
   const dragging = useRef(false);
   const draggingY = useRef(false);
 
