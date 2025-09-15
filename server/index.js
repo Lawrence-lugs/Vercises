@@ -8,10 +8,21 @@ const listExercises = require('./listExercises');
 const app = express();
 const PORT = 3000;
 
+// Utility function to find any .vcd file in a directory
+function findVcdFile(dir) {
+  const files = fs.readdirSync(dir);
+  for (const fname of files) {
+    if (fname.endsWith('.vcd')) {
+      return fname;
+    }
+  }
+  return null;
+}
+
 // Expose assets in exercises folder as static files so that markdown renders properly
-app.use(express.static(path.join('/app/exercises')));
-app.use(bodyParser.json());
+// app.use(express.static(path.join('/app/exercises')));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(bodyParser.json());
 
 // List all exercises
 app.get('/api/exercises', (req, res) => {
@@ -102,8 +113,11 @@ app.post('/api/simulate', async (req, res) => {
   } else {
     output += 'Simulation command failed, skipping execution.\n';
   }
-  res.json({ output });
-  
+
+  // Find any .vcd file in the workDir
+  const vcdFile = findVcdFile(workDir);
+  res.json({ output, vcd: vcdFile });
+
   // Remove the entire temp directory instead of individual files
   try {
     fs.rmSync(workDir, { recursive: true, force: true });
