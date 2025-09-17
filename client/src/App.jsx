@@ -49,6 +49,9 @@ export default function App() {
     return <ExercisesList />;
   }
 
+  // Print the current path for debugging
+  console.log('Current path:', pathname);
+
   // Load exercise content on mount or route change
   useEffect(() => {
     const exercise = getExerciseFromPath();
