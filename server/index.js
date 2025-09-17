@@ -77,6 +77,10 @@ app.get('/api/exercise/:exercise', async (req, res) => {
 
 app.post('/api/simulate', async (req, res) => {
   const { files, simCmd, runCmd } = req.body;
+
+  // Log for debug
+  console.log(files)
+
   const util = require('util');
   const execPromise = util.promisify(exec);
   const workDir = path.join('/tmp','vercises-tmp');
