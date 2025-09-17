@@ -5,6 +5,7 @@ RUN apt-get update && \
     apt-get install -y iverilog verilator && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+COPY . /app/server
 WORKDIR /app/server
 
 COPY package*.json ./
