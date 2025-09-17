@@ -1,4 +1,7 @@
 FROM node:20-bullseye
+
+COPY . /app/client
+
 WORKDIR /app/client
 # Install dependencies only (source code will be mounted by docker-compose)
 COPY package*.json ./
