@@ -16,6 +16,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Create proxy network if not exists
+        run: |
+          docker network inspect proxy >/dev/null 2>&1 || \
+          docker network create proxy
+
       - name: Build containers
         run: docker compose -f docker-compose.yml build
 
