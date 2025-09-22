@@ -40,19 +40,16 @@ jobs:
       - name: Stop containers
         run: docker compose -f docker-compose.yml down
 
-  # deploy:
-  #   needs: build-test
-  #   runs-on: ubuntu-latest
-  #   if: github.ref == 'refs/heads/main'
-  #   steps:
-  #     - name: Deploy to VM via SSH
-  #       uses: appleboy/ssh-action@v0.1.10
-  #       with:
-  #         host: ${{ secrets.VM_HOST }}
-  #         username: ${{ secrets.VM_USER }}
-  #         key: ${{ secrets.VM_KEY }}
-  #         script: |
-  #           cd /path/to/your/project
-  #           git pull origin main
-  #           docker compose pull
-  #           docker compose up -d
+  deploy:
+    runs-on: [self-hosted]
+
+    steps:
+      - name: Checkout code (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Rebuild and start container
+        run: |
+          docker compose up -d --build
+          docker system prune -f
