@@ -1,5 +1,5 @@
 services:
-  client:
+  vercises-client:
     restart: unless-stopped
     build:
       context: ./client
@@ -18,7 +18,7 @@ services:
       - "traefik.http.routers.myapp.entrypoints=web"
       - "traefik.http.services.myapp.loadbalancer.server.port=5173"
     command: ["npm", "run", "dev"]
-  server:
+  vercises-server:
     restart: unless-stopped
     build:
       context: ./server
