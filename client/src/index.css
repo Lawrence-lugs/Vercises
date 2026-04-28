@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+#root { height: 100%; }
+
+/* Animation for output update */
+.output-anim {
+  animation: outputFlash 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes outputFlash {
+  0%   { background-color: #fef2f2; box-shadow: 0 0 0 0 #A52033; }
+  30%  { background-color: #fde8ea; box-shadow: 0 0 8px 2px #A52033; }
+  100% { background-color: inherit; box-shadow: none; }
+}
+
+/* Slide-up sim panel transition */
+.sim-panel-enter {
+  transform: translateY(100%);
+  opacity: 0;
+}
+.sim-panel-active {
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.28s ease;
+}
+.sim-panel-exit {
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.22s ease;
+}
+
+/* Slim custom scrollbar for output */
+.output-pre::-webkit-scrollbar { width: 6px; height: 6px; }
+.output-pre::-webkit-scrollbar-track { background: transparent; }
+.output-pre::-webkit-scrollbar-thumb { background: #dee2e6; border-radius: 3px; }
+.output-pre::-webkit-scrollbar-thumb:hover { background: #A52033; }
+
+/* Markdown prose overrides */
+.md-prose { font-family: 'Source Sans 3', 'Source Sans Pro', 'Segoe UI', system-ui, sans-serif; font-size: 1.05rem; }
+.md-prose h1 { font-size: 1.75rem; font-weight: 700; color: #6B0D1A; margin-bottom: 0.75rem; }
+.md-prose h2 { font-size: 1.35rem; font-weight: 700; color: #6B0D1A; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+.md-prose h3 { font-size: 1.1rem;  font-weight: 600; color: #6B0D1A; margin-top: 1.25rem; margin-bottom: 0.4rem; }
+.md-prose p  { color: #212529; line-height: 1.7; margin-bottom: 0.9rem; }
+.md-prose li { color: #212529; line-height: 1.7; margin-bottom: 0.3rem; }
+.md-prose ul { padding-left: 1.4rem; list-style: disc; margin-bottom: 0.9rem; }
+.md-prose ol { padding-left: 1.4rem; list-style: decimal; margin-bottom: 0.9rem; }
+.md-prose a  { color: #A52033; text-decoration: underline; }
+.md-prose a:hover { color: #6B0D1A; }
+.md-prose code {
+  background: #f1f3f5;
+  color: #A52033;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: 'Cascadia Code', 'Fira Mono', Consolas, monospace;
+  font-size: 0.875em;
+}
+.md-prose pre {
+  background: #f1f3f5;
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+.md-prose pre code {
+  background: none;
+  padding: 0;
+  color: #212529;
+  font-size: 0.9rem;
+}
+.md-prose blockquote {
+  border-left: 3px solid #A52033;
+  padding-left: 1rem;
+  color: #616161;
+  margin: 0.75rem 0;
+}
+.md-prose img { max-width: 100%; height: auto; border-radius: 6px; margin: 1rem 0; }
+.md-prose hr  { border: none; border-top: 1.5px solid #dee2e6; margin: 1.5rem 0; }
