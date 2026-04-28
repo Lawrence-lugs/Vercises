@@ -1,2 +1,1 @@
-docker-compose build
-docker-compose up
+docker compose -f docker-compose.local.yml up --build
