@@ -1,0 +1,36 @@
+services:
+  vercises-client:
+    restart: unless-stopped
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    volumes:
+      - ./client:/app/client
+      - /app/client/node_modules
+      - ./exercises:/app/client/public
+    ports:
+      - "5173:5173"
+    networks:
+      - local
+    command: ["npm", "run", "dev"]
+
+  vercises-server:
+    restart: unless-stopped
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    volumes:
+      - ./server:/app/server
+      - /app/server/node_modules
+      - ./exercises:/app/exercises
+    ports:
+      - "3000:3000"
+    networks:
+      local:
+        aliases:
+          - server
+    command: ["npm", "run", "dev"]
+
+networks:
+  local:
+    driver: bridge
