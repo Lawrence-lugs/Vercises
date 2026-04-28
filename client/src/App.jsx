@@ -1,6 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import MonacoEditor from '@monaco-editor/react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 function getExerciseFromPath() {
   const match = window.location.pathname.match(/^\/exercises\/([^/]+)/);
@@ -203,6 +207,8 @@ function ExerciseView() {
         >
           <div className="md-prose px-12 py-10 max-w-2xl">
             <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
               components={{
                 img: ({ node, ...props }) => {
                   let src = props.src || '';

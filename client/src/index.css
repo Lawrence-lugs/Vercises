@@ -79,3 +79,9 @@ html, body { margin: 0; padding: 0; height: 100%; }
 }
 .md-prose img { max-width: 100%; height: auto; border-radius: 6px; margin: 1rem 0; }
 .md-prose hr  { border: none; border-top: 1.5px solid #dee2e6; margin: 1.5rem 0; }
+.md-prose table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.95rem; }
+.md-prose thead { background: #6B0D1A; color: #fff; }
+.md-prose th { padding: 0.55rem 0.85rem; text-align: left; font-weight: 600; }
+.md-prose td { padding: 0.5rem 0.85rem; color: #212529; border-bottom: 1px solid #dee2e6; }
+.md-prose tbody tr:nth-child(even) { background: #f8f9fa; }
+.md-prose tbody tr:hover { background: #fce8eb; }
