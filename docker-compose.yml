@@ -17,7 +17,7 @@ services:
       - "traefik.http.routers.myapp.rule=PathPrefix(`/exercises`)"
       - "traefik.http.routers.myapp.entrypoints=web"
       - "traefik.http.services.myapp.loadbalancer.server.port=5173"
-    command: ["npm", "run", "dev"]
+    command: ["sh", "-c", "npm install && npm run dev"]
   vercises-server:
     restart: unless-stopped
     build:
@@ -36,7 +36,7 @@ services:
       - "3000"
     # ports:
     #   - "3000:3000"
-    command: ["npm", "run", "dev"]
+    command: ["sh", "-c", "npm install && npm run dev"]
     networks:
       - proxy
 
