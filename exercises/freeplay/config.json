@@ -1,0 +1,7 @@
+{
+    "hidden": [],
+    "simulation_command": "iverilog",
+    "default_args": "",
+    "enable_args": true,
+    "run_command": "./a.out"
+}
