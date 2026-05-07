@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vercises — Teacher Documentation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+        },
+      },
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    /* Subtle syntax highlight for inline code */
+    .prose code { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+
+<body class="bg-zinc-950 text-zinc-200 font-sans antialiased">
+
+  <!-- ─── Top nav ─────────────────────────────────────────────────────────── -->
+  <nav class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur">
+    <div class="mx-auto max-w-5xl flex items-center gap-6 px-6 py-3 text-sm">
+      <span class="font-bold text-violet-400 text-base tracking-tight">Vercises</span>
+      <a href="#what-is-vercises"   class="text-zinc-400 hover:text-zinc-100 transition-colors">Overview</a>
+      <a href="#getting-started"    class="text-zinc-400 hover:text-zinc-100 transition-colors">Getting Started</a>
+      <a href="#adding-an-exercise" class="text-zinc-400 hover:text-zinc-100 transition-colors">Adding an Exercise</a>
+      <a href="#config-reference"   class="text-zinc-400 hover:text-zinc-100 transition-colors">config.json</a>
+      <a href="#yosys-then-ivlog"   class="text-zinc-400 hover:text-zinc-100 transition-colors">yosys-then-ivlog</a>
+      <a href="#exercise-patterns"  class="text-zinc-400 hover:text-zinc-100 transition-colors">Patterns</a>
+      <a href="https://github.com/Lawrence-lugs/Vercises" target="_blank"
+         class="ml-auto text-zinc-500 hover:text-zinc-100 transition-colors">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <main class="mx-auto max-w-5xl px-6 py-16 space-y-24">
+
+    <!-- ─── Hero ──────────────────────────────────────────────────────────── -->
+    <section id="what-is-vercises">
+      <div class="mb-4 inline-block rounded-full bg-violet-900/40 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-violet-400">
+        Teacher Guide
+      </div>
+      <h1 class="text-4xl font-bold text-white leading-tight mb-4">
+        Vercises
+      </h1>
+      <p class="text-zinc-400 text-lg max-w-2xl leading-relaxed">
+        An <a href="https://exercism.org" target="_blank" class="text-violet-400 hover:underline">Exercism</a>-style
+        platform for Verilog exercises. Students open a browser, read the spec, write RTL in a Monaco editor,
+        hit <strong class="text-zinc-200">Run</strong>, and see simulator output and waveforms — no local toolchain needed.
+      </p>
+      <p class="mt-4 text-zinc-500 max-w-2xl leading-relaxed">
+        As a teacher, your only job is to drop files into a folder and write a
+        <code class="text-violet-300 bg-zinc-800 px-1 rounded">config.json</code>.
+        Everything else is handled by the platform.
+      </p>
+
+      <!-- feature chips -->
+      <div class="mt-8 flex flex-wrap gap-3">
+        <span class="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300">Monaco editor (multi-tab)</span>
+        <span class="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300">iverilog / verilator</span>
+        <span class="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300">Yosys synthesis</span>
+        <span class="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300">Surfer waveform viewer</span>
+        <span class="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300">KaTeX math in instructions</span>
+        <span class="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300">Docker-compose deploy</span>
+      </div>
+    </section>
+
+    <!-- ─── Getting Started ───────────────────────────────────────────────── -->
+    <section id="getting-started">
+      <h2 class="text-2xl font-bold text-white mb-6 pb-2 border-b border-zinc-800">Getting Started</h2>
+
+      <ol class="space-y-8">
+        <li class="flex gap-4">
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-violet-700 text-white flex items-center justify-center font-bold text-sm">1</span>
+          <div>
+            <p class="font-semibold text-zinc-100 mb-1">Clone the repository</p>
+            <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm font-mono text-green-400 overflow-x-auto"><code>git clone https://github.com/Lawrence-lugs/Vercises.git
+cd Vercises</code></pre>
+          </div>
+        </li>
+
+        <li class="flex gap-4">
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-violet-700 text-white flex items-center justify-center font-bold text-sm">2</span>
+          <div>
+            <p class="font-semibold text-zinc-100 mb-1">Build and start the stack</p>
+            <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm font-mono text-green-400 overflow-x-auto"><code>docker compose build
+docker compose up</code></pre>
+            <p class="mt-2 text-zinc-500 text-sm">
+              This starts a Node.js server (port 3000) behind a Traefik reverse proxy,
+              and a Vite-based React client (port 5173). Exercises are volume-mounted
+              at <code class="text-violet-300">/app/exercises</code> — no rebuild needed when you add content.
+            </p>
+          </div>
+        </li>
+
+        <li class="flex gap-4">
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-violet-700 text-white flex items-center justify-center font-bold text-sm">3</span>
+          <div>
+            <p class="font-semibold text-zinc-100 mb-1">Open the app</p>
+            <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm font-mono text-green-400 overflow-x-auto"><code>http://localhost/exercises</code></pre>
+            <p class="mt-2 text-zinc-500 text-sm">
+              The exercise list is auto-generated from the folders inside <code class="text-violet-300">exercises/</code>.
+            </p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ─── Adding an Exercise ───────────────────────────────────────────── -->
+    <section id="adding-an-exercise">
+      <h2 class="text-2xl font-bold text-white mb-6 pb-2 border-b border-zinc-800">Adding an Exercise</h2>
+
+      <p class="text-zinc-400 mb-8">
+        An exercise is just a folder inside <code class="text-violet-300 bg-zinc-800 px-1 rounded">exercises/</code>.
+        The folder name becomes the exercise's URL slug and display title.
+        The minimum required content is one Verilog file and a testbench.
+      </p>
+
+      <!-- Minimal structure -->
+      <div class="mb-10">
+        <h3 class="text-lg font-semibold text-zinc-100 mb-3">Minimum folder layout</h3>
+        <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 text-sm font-mono text-zinc-300 overflow-x-auto"><code>exercises/
+└── my-exercise/
+    ├── my_design.v        <span class="text-zinc-500"># student-editable design file</span>
+    └── tb_my_design.v     <span class="text-zinc-500"># testbench (can be hidden from the editor)</span></code></pre>
+        <p class="mt-3 text-zinc-500 text-sm">
+          That's it. The platform will detect the folder and list the exercise. Both files appear as editable tabs by default.
+        </p>
+      </div>
+
+      <!-- Recommended structure -->
+      <div class="mb-10">
+        <h3 class="text-lg font-semibold text-zinc-100 mb-3">Recommended folder layout</h3>
+        <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 text-sm font-mono text-zinc-300 overflow-x-auto"><code>exercises/
+└── my-exercise/
+    ├── my_design.v        <span class="text-zinc-500"># student edits this</span>
+    ├── tb_my_design.v     <span class="text-zinc-500"># hidden from editor</span>
+    ├── components.v       <span class="text-zinc-500"># optional helper files (also hidden)</span>
+    ├── instructions.md    <span class="text-zinc-500"># shown in the left pane</span>
+    └── config.json        <span class="text-zinc-500"># exercise configuration (see below)</span></code></pre>
+      </div>
+
+      <!-- instructions.md -->
+      <div class="mb-10">
+        <h3 class="text-lg font-semibold text-zinc-100 mb-3">
+          Writing <code class="font-mono text-violet-300">instructions.md</code>
+        </h3>
+        <p class="text-zinc-400 mb-3">
+          This file is rendered as Markdown in the left pane, with full support for:
+        </p>
+        <ul class="list-disc list-inside text-zinc-400 space-y-1 mb-4 ml-2">
+          <li>GitHub Flavored Markdown (tables, code blocks, task lists)</li>
+          <li>Inline and block LaTeX math via KaTeX</li>
+          <li>Images — place image files <strong class="text-zinc-200">in the same folder</strong> and reference them by filename</li>
+        </ul>
+        <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 text-sm font-mono text-zinc-300 overflow-x-auto"><code># Lab: 4-bit LFSR
+
+Design a Galois LFSR satisfying the primitive polynomial
+
+$P(x) = x^4 + x^3 + 1$
+
+| Port   | Width | Direction |
+|--------|-------|-----------|
+| `clk`  | 1     | input     |
+| `nrst` | 1     | input     |
+| `q`    | 4     | output    |
+
+![block diagram](block_diagram.png)
+
+Verify your work with the provided testbench.</code></pre>
+      </div>
+
+      <!-- Simulating immediately -->
+      <div class="rounded-xl border border-violet-800/50 bg-violet-950/30 p-5">
+        <p class="text-violet-300 font-semibold mb-1">No restart needed</p>
+        <p class="text-zinc-400 text-sm">
+          The exercise folder is volume-mounted into the container. Drop a new folder in
+          <code class="text-violet-300">exercises/</code> and refresh the browser — it appears in the list immediately.
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── config.json reference ─────────────────────────────────────────── -->
+    <section id="config-reference">
+      <h2 class="text-2xl font-bold text-white mb-2 pb-2 border-b border-zinc-800">
+        <code class="font-mono">config.json</code> Reference
+      </h2>
+      <p class="text-zinc-500 mb-8 text-sm">All fields are optional. Omit the file entirely for a zero-config exercise.</p>
+
+      <!-- Full example -->
+      <div class="mb-10">
+        <h3 class="text-lg font-semibold text-zinc-100 mb-3">Full example</h3>
+        <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 text-sm font-mono text-zinc-300 overflow-x-auto"><code>{
+    "hidden":             ["tb_my_design.v", "components.v"],
+    "simulation_command": "iverilog tb_my_design.v components.v my_design.v",
+    "default_args":       "",
+    "enable_args":        false,
+    "run_command":        "./a.out",
+    "hide_instructions":  false,
+    "allow_new_files":    false
+}</code></pre>
+      </div>
+
+      <!-- Field table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse">
+          <thead>
+            <tr class="text-left text-zinc-500 uppercase text-xs tracking-wider border-b border-zinc-800">
+              <th class="pb-3 pr-6 font-semibold">Field</th>
+              <th class="pb-3 pr-6 font-semibold">Type</th>
+              <th class="pb-3 pr-6 font-semibold">Default</th>
+              <th class="pb-3 font-semibold">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800/60">
+
+            <tr class="align-top">
+              <td class="py-4 pr-6 font-mono text-violet-300 whitespace-nowrap">hidden</td>
+              <td class="py-4 pr-6 text-zinc-500">string[]</td>
+              <td class="py-4 pr-6 text-zinc-500"><code>[]</code></td>
+              <td class="py-4 text-zinc-400">
+                List of filenames to hide from the Monaco editor.
+                Hidden files are still compiled — students just can't see or modify them.
+                Use this for testbenches and pre-built component libraries you don't want tampered with.
+              </td>
+            </tr>
+
+            <tr class="align-top">
+              <td class="py-4 pr-6 font-mono text-violet-300 whitespace-nowrap">simulation_command</td>
+              <td class="py-4 pr-6 text-zinc-500">string</td>
+              <td class="py-4 pr-6 text-zinc-500"><code class="text-zinc-400">"iverilog"</code></td>
+              <td class="py-4 text-zinc-400">
+                The compile command that is run on the server.
+                Can include full filenames and flags.
+                When <code class="text-violet-300">enable_args</code> is <code class="text-zinc-300">false</code>,
+                this is the <em>complete</em> command — the args box is disabled and hidden.
+                Set to <code class="text-violet-300">"yosys-then-ivlog"</code> to synthesize before simulating
+                (see <a href="#yosys-then-ivlog" class="text-violet-400 hover:underline">yosys-then-ivlog</a>).
+              </td>
+            </tr>
+
+            <tr class="align-top">
+              <td class="py-4 pr-6 font-mono text-violet-300 whitespace-nowrap">default_args</td>
+              <td class="py-4 pr-6 text-zinc-500">string</td>
+              <td class="py-4 pr-6 text-zinc-500"><code class="text-zinc-400">""</code></td>
+              <td class="py-4 text-zinc-400">
+                Pre-filled text in the args input box. Useful when
+                <code class="text-violet-300">enable_args</code> is <code class="text-zinc-300">true</code>
+                and you want to give students a starting hint (e.g. the expected filename order)
+                without hard-coding it into the command.
+              </td>
+            </tr>
+
+            <tr class="align-top">
+              <td class="py-4 pr-6 font-mono text-violet-300 whitespace-nowrap">enable_args</td>
+              <td class="py-4 pr-6 text-zinc-500">boolean</td>
+              <td class="py-4 pr-6 text-zinc-500"><code class="text-zinc-400">true</code></td>
+              <td class="py-4 text-zinc-400">
+                When <code class="text-zinc-300">true</code>, an args input box is shown so students can pass extra
+                flags or filenames to the simulator. Set to <code class="text-zinc-300">false</code> to lock the
+                simulation command entirely — ideal for guided exercises where the command is fully specified
+                in <code class="text-violet-300">simulation_command</code>.
+              </td>
+            </tr>
+
+            <tr class="align-top">
+              <td class="py-4 pr-6 font-mono text-violet-300 whitespace-nowrap">run_command</td>
+              <td class="py-4 pr-6 text-zinc-500">string</td>
+              <td class="py-4 pr-6 text-zinc-500"><code class="text-zinc-400">"./a.out"</code></td>
+              <td class="py-4 text-zinc-400">
+                Command executed after a successful compile step.
+                Change this if you use a custom output name via <code class="text-violet-300">-o</code>,
+                or if you're using Verilator (which produces a different binary path).
+              </td>
+            </tr>
+
+            <tr class="align-top">
+              <td class="py-4 pr-6 font-mono text-violet-300 whitespace-nowrap">hide_instructions</td>
+              <td class="py-4 pr-6 text-zinc-500">boolean</td>
+              <td class="py-4 pr-6 text-zinc-500"><code class="text-zinc-400">false</code></td>
+              <td class="py-4 text-zinc-400">
+                When <code class="text-zinc-300">true</code>, the left instructions pane is collapsed and hidden.
+                Useful for open-ended "sandbox" exercises where there is no fixed specification.
+              </td>
+            </tr>
+
+            <tr class="align-top">
+              <td class="py-4 pr-6 font-mono text-violet-300 whitespace-nowrap">allow_new_files</td>
+              <td class="py-4 pr-6 text-zinc-500">boolean</td>
+              <td class="py-4 pr-6 text-zinc-500"><code class="text-zinc-400">false</code></td>
+              <td class="py-4 text-zinc-400">
+                When <code class="text-zinc-300">true</code>, students can create additional Verilog files
+                directly from the editor UI (a <em>+ New File</em> tab appears).
+                Useful for freeplay-style exercises or any exercise where students are
+                expected to design their own module hierarchy.
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── yosys-then-ivlog ──────────────────────────────────────────────── -->
+    <section id="yosys-then-ivlog">
+      <h2 class="text-2xl font-bold text-white mb-6 pb-2 border-b border-zinc-800">
+        <code class="font-mono">yosys-then-ivlog</code>
+      </h2>
+
+      <p class="text-zinc-400 mb-4 leading-relaxed">
+        <code class="text-violet-300 bg-zinc-800 px-1 rounded">yosys-then-ivlog</code> is a drop-in replacement
+        for <code class="text-zinc-300">iverilog</code> that adds a Yosys synthesis step before simulation.
+        It accepts the same arguments and exits with the same codes.
+      </p>
+
+      <!-- Why it exists -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-zinc-100 mb-3">Why use it?</h3>
+        <p class="text-zinc-400 mb-3 leading-relaxed">
+          Verilog is a dual-purpose language: valid simulation code is not necessarily synthesizable RTL.
+          A student could write behavioral constructs — blocking assignments in always blocks,
+          implicit latches, unsupported operators — that pass a behavioral testbench but would
+          <strong class="text-zinc-200">fail in a real ASIC or FPGA flow</strong>.
+        </p>
+        <p class="text-zinc-400 leading-relaxed">
+          When you set <code class="text-violet-300">simulation_command</code> to
+          <code class="text-violet-300">"yosys-then-ivlog"</code>, the platform:
+        </p>
+        <ol class="mt-4 space-y-2 ml-4">
+          <li class="flex gap-3 text-zinc-400">
+            <span class="text-violet-400 font-bold">1.</span>
+            Passes the design sources through <strong class="text-zinc-200">Yosys synthesis</strong>
+            (<code>synth -flatten</code>), generating a gate-level netlist.
+            If the design is not synthesizable, Yosys exits with an error — the student sees that immediately.
+          </li>
+          <li class="flex gap-3 text-zinc-400">
+            <span class="text-violet-400 font-bold">2.</span>
+            Passes the <strong class="text-zinc-200">gate-level netlist</strong> (plus Yosys's own
+            <code>simlib.v</code> cell library) to <code>iverilog</code> for simulation.
+            The testbench runs against the synthesized gates, not the behavioural model.
+          </li>
+        </ol>
+        <p class="mt-4 text-zinc-400 leading-relaxed">
+          The student sees the synthesis log in the output pane, followed by simulation results — all in one click.
+        </p>
+      </div>
+
+      <!-- Separator convention -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-zinc-100 mb-3">
+          Testbench separation with <code class="font-mono text-violet-300">--</code>
+        </h3>
+        <p class="text-zinc-400 mb-3 leading-relaxed">
+          Testbenches must <strong class="text-zinc-200">not</strong> go through Yosys
+          (they use simulation-only constructs like <code>$display</code> and <code>$dumpfile</code>).
+          Pass them after a <code class="text-violet-300">--</code> separator so they are forwarded
+          directly to <code>iverilog</code>, bypassing synthesis:
+        </p>
+        <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 text-sm font-mono text-zinc-300 overflow-x-auto"><code>yosys-then-ivlog  my_design.v  --  tb_my_design.v</code></pre>
+        <p class="mt-3 text-zinc-500 text-sm">
+          Files before <code>--</code> → synthesized by Yosys → gate-level netlist.<br/>
+          Files after <code>--</code> → passed directly to iverilog alongside the netlist.
+        </p>
+      </div>
+
+      <!-- config example -->
+      <div class="mb-4">
+        <h3 class="text-lg font-semibold text-zinc-100 mb-3">config.json for a gate-level exercise</h3>
+        <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-5 text-sm font-mono text-zinc-300 overflow-x-auto"><code>{
+    "hidden":             ["tb_my_design.v"],
+    "simulation_command": "yosys-then-ivlog my_design.v -- tb_my_design.v",
+    "enable_args":        false,
+    "run_command":        "./a.out"
+}</code></pre>
+      </div>
+
+      <!-- flags -->
+      <div>
+        <h3 class="text-lg font-semibold text-zinc-100 mb-3">Supported flags</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="text-left text-zinc-500 uppercase text-xs tracking-wider border-b border-zinc-800">
+                <th class="pb-3 pr-6 font-semibold">Flag</th>
+                <th class="pb-3 font-semibold">Behavior</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-800/60">
+              <tr class="align-top">
+                <td class="py-3 pr-6 font-mono text-violet-300 whitespace-nowrap">-s &lt;top&gt;</td>
+                <td class="py-3 text-zinc-400">Sets the hierarchy top module for Yosys. Not forwarded to iverilog.</td>
+              </tr>
+              <tr class="align-top">
+                <td class="py-3 pr-6 font-mono text-violet-300 whitespace-nowrap">-o &lt;file&gt;</td>
+                <td class="py-3 text-zinc-400">Output binary name, forwarded to iverilog.</td>
+              </tr>
+              <tr class="align-top">
+                <td class="py-3 pr-6 font-mono text-violet-300 whitespace-nowrap">-D, -I</td>
+                <td class="py-3 text-zinc-400">Preprocessor defines and include paths — forwarded to both Yosys and iverilog.</td>
+              </tr>
+              <tr class="align-top">
+                <td class="py-3 pr-6 font-mono text-violet-300 whitespace-nowrap">--</td>
+                <td class="py-3 text-zinc-400">Separator. Files after this go to iverilog only (testbenches, models).</td>
+              </tr>
+              <tr class="align-top">
+                <td class="py-3 pr-6 font-mono text-violet-300 whitespace-nowrap">other flags</td>
+                <td class="py-3 text-zinc-400">Forwarded verbatim to iverilog.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Exercise Patterns ─────────────────────────────────────────────── -->
+    <section id="exercise-patterns">
+      <h2 class="text-2xl font-bold text-white mb-6 pb-2 border-b border-zinc-800">Exercise Patterns</h2>
+      <p class="text-zinc-400 mb-8">
+        Mix and match the config options to create different exercise styles.
+      </p>
+
+      <div class="grid gap-6 sm:grid-cols-2">
+
+        <!-- Guided / Autograded -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+          <div class="text-xs font-bold uppercase tracking-widest text-violet-400 mb-2">Guided / Autograded</div>
+          <p class="text-zinc-400 text-sm mb-4">
+            The testbench is hidden. The simulation command is fixed.
+            Students only see and edit their design file.
+            A pass/fail is determined by the testbench output.
+          </p>
+          <pre class="bg-zinc-950 rounded-lg p-3 text-xs font-mono text-zinc-300 overflow-x-auto"><code>{
+  "hidden":             ["tb_alu.v", "components.v"],
+  "simulation_command": "iverilog tb_alu.v components.v alu.v",
+  "enable_args":        false,
+  "run_command":        "./a.out"
+}</code></pre>
+        </div>
+
+        <!-- Gate-level verification -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+          <div class="text-xs font-bold uppercase tracking-widest text-violet-400 mb-2">Gate-Level Verification</div>
+          <p class="text-zinc-400 text-sm mb-4">
+            Design sources are synthesized by Yosys before simulation.
+            Students must write synthesizable RTL — behavioral workarounds fail at the synthesis step.
+          </p>
+          <pre class="bg-zinc-950 rounded-lg p-3 text-xs font-mono text-zinc-300 overflow-x-auto"><code>{
+  "hidden":             ["tb_design.v"],
+  "simulation_command": "yosys-then-ivlog design.v -- tb_design.v",
+  "enable_args":        false,
+  "run_command":        "./a.out"
+}</code></pre>
+        </div>
+
+        <!-- Incomplete command (discovery) -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+          <div class="text-xs font-bold uppercase tracking-widest text-violet-400 mb-2">Discovery / Partially Guided</div>
+          <p class="text-zinc-400 text-sm mb-4">
+            The simulation command base is set but the args box is enabled with a hint.
+            Students must figure out which files to include — part of the exercise.
+          </p>
+          <pre class="bg-zinc-950 rounded-lg p-3 text-xs font-mono text-zinc-300 overflow-x-auto"><code>{
+  "simulation_command": "iverilog",
+  "enable_args":        true,
+  "default_args":       "tb_stack.v ???.v",
+  "run_command":        "./a.out"
+}</code></pre>
+        </div>
+
+        <!-- Freeplay / Sandbox -->
+        <div class="rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+          <div class="text-xs font-bold uppercase tracking-widest text-violet-400 mb-2">Freeplay / Sandbox</div>
+          <p class="text-zinc-400 text-sm mb-4">
+            No instructions pane. Students can create new files, write anything, and run arbitrary simulations.
+            Good for open-ended projects or end-of-unit labs.
+          </p>
+          <pre class="bg-zinc-950 rounded-lg p-3 text-xs font-mono text-zinc-300 overflow-x-auto"><code>{
+  "simulation_command": "iverilog",
+  "enable_args":        true,
+  "hide_instructions":  true,
+  "allow_new_files":    true,
+  "run_command":        "./a.out"
+}</code></pre>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─── Waveforms callout ─────────────────────────────────────────────── -->
+    <section>
+      <div class="rounded-xl border border-zinc-700 bg-zinc-900 p-6 flex gap-5 items-start">
+        <div class="text-3xl select-none">〜</div>
+        <div>
+          <p class="font-semibold text-zinc-100 mb-1">Waveform viewer included</p>
+          <p class="text-zinc-400 text-sm leading-relaxed">
+            If your testbench produces a <code class="text-violet-300">.vcd</code> file
+            (via <code class="text-zinc-300">$dumpfile</code> / <code class="text-zinc-300">$dumpvars</code>),
+            Vercises automatically opens it in the embedded
+            <a href="https://surfer-project.org" target="_blank" class="text-violet-400 hover:underline">Surfer</a>
+            waveform viewer after simulation. No extra configuration needed.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Footer ───────────────────────────────────────────────────────── -->
+    <footer class="border-t border-zinc-800 pt-8 text-center text-zinc-600 text-sm">
+      <p>
+        Vercises &mdash;
+        <a href="https://github.com/Lawrence-lugs/Vercises" target="_blank" class="hover:text-zinc-400 transition-colors">
+          github.com/Lawrence-lugs/Vercises
+        </a>
+      </p>
+    </footer>
+
+  </main>
+</body>
+</html>
