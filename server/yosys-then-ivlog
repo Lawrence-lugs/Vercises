@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+# yosys-then-ivlog — synthesize with Yosys, then simulate the gate-level netlist with iverilog.
+# Drop-in replacement for iverilog: same argument set, same exit codes.
+#
+# INSTALL:
+#   sudo cp yosys-then-ivlog /usr/local/bin/
+#   sudo chmod +x /usr/local/bin/yosys-then-ivlog
+#
+# NOTES:
+#   - -s <top> is consumed and forwarded to Yosys as the hierarchy top; not passed to iverilog
+#     (the flattened netlist doesn't need it).
+#   - -D / -I are forwarded to both Yosys and iverilog.
+#   - Response files (-f / -c) are passed through to iverilog only; Yosys won't see sources
+#     listed inside them (uncommon case — explicit .v args are the expected usage).
+#   - Yosys synthesis uses -sv (SystemVerilog mode) for maximum compatibility.
+
+set -euo pipefail
+
+# ── dependencies ──────────────────────────────────────────────────────────────
+for dep in yosys iverilog; do
+    if ! command -v "$dep" &>/dev/null; then
+        echo "yosys-then-ivlog: '$dep' not found in PATH" >&2
+        exit 1
+    fi
+done
+
+# Locate simlib.v — try yosys-config first, then common install paths
+SIMLIB=""
+if command -v yosys-config &>/dev/null; then
+    SIMLIB="$(yosys-config --datdir)/simlib.v"
+else
+    for _candidate in /usr/share/yosys/simlib.v /usr/local/share/yosys/simlib.v; do
+        if [[ -f "$_candidate" ]]; then
+            SIMLIB="$_candidate"
+            break
+        fi
+    done
+fi
+if [[ -z "$SIMLIB" || ! -f "$SIMLIB" ]]; then
+    echo "yosys-then-ivlog: Yosys simlib not found" >&2
+    exit 1
+fi
+
+# ── temp workspace ─────────────────────────────────────────────────────────────
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
+NETLIST="$WORK/netlist.v"
+YOSYS_SCRIPT="$WORK/synth.ys"
+
+# ── argument parsing ───────────────────────────────────────────────────────────
+OUTPUT=""        # -o value
+TOP=""           # -s value (top module for yosys hierarchy)
+SOURCES=()       # positional .v / .sv files  → sent to Yosys
+IV_ONLY=()       # files after '--'            → sent to iverilog only (testbenches)
+IV_ARGS=()       # flags forwarded verbatim to iverilog
+YS_READ_ARGS=""  # -D / -I flags forwarded to yosys read_verilog
+PAST_SEP=0       # 1 after '--' is seen
+
+consume_next() {
+    # helper: advance index and echo the next positional arg
+    i=$((i + 1))
+    local ref="args[$i]"
+    echo "${!ref}"
+}
+
+declare -a args=("$@")
+i=0
+while [[ $i -lt ${#args[@]} ]]; do
+    arg="${args[$i]}"
+
+    # ── end-of-options separator: files after this go to iverilog only ──────
+    if [[ "$arg" == "--" ]]; then
+        PAST_SEP=1
+        i=$((i + 1))
+        continue
+    fi
+
+    if [[ $PAST_SEP -eq 1 ]]; then
+        IV_ONLY+=("$arg")
+        i=$((i + 1))
+        continue
+    fi
+
+    case "$arg" in
+
+        # ── output file ──────────────────────────────────────────────────────
+        -o)
+            OUTPUT="$(consume_next)"
+            IV_ARGS+=("-o" "$OUTPUT")
+            ;;
+        -o?*)
+            OUTPUT="${arg#-o}"
+            IV_ARGS+=("$arg")
+            ;;
+
+        # ── top module (yosys only) ──────────────────────────────────────────
+        -s)
+            TOP="$(consume_next)"
+            ;;
+        -s?*)
+            TOP="${arg#-s}"
+            ;;
+
+        # ── defines / includes (both tools) ─────────────────────────────────
+        -D|-I)
+            val="$(consume_next)"
+            IV_ARGS+=("$arg" "$val")
+            YS_READ_ARGS+=" ${arg}${val}"
+            ;;
+        -D?*|-I?*)
+            IV_ARGS+=("$arg")
+            YS_READ_ARGS+=" $arg"
+            ;;
+
+        # ── all other flags → iverilog passthrough ───────────────────────────
+        -*)
+            IV_ARGS+=("$arg")
+            # peek: if next token is a value for this flag, grab it too
+            case "$arg" in
+                -T|-g|-m|-N|-p|-I|-W|-w|-e)
+                    if [[ $((i+1)) -lt ${#args[@]} && "${args[$((i+1))]}" != -* ]]; then
+                        i=$((i + 1))
+                        IV_ARGS+=("${args[$i]}")
+                    fi
+                    ;;
+            esac
+            ;;
+
+        # ── source files ─────────────────────────────────────────────────────
+        *)
+            SOURCES+=("$arg")
+            ;;
+    esac
+    i=$((i + 1))
+done
+
+if [[ ${#SOURCES[@]} -eq 0 ]]; then
+    echo "yosys-then-ivlog: no source files given" >&2
+    exit 1
+fi
+
+# ── build Yosys synthesis script ──────────────────────────────────────────────
+{
+    printf 'read_verilog -sv%s %s\n' \
+        "${YS_READ_ARGS}" \
+        "${SOURCES[*]}"
+
+    if [[ -n "$TOP" ]]; then
+        printf 'hierarchy -check -top %s\n' "$TOP"
+        printf 'synth -top %s -flatten\n'   "$TOP"
+    else
+        printf 'hierarchy -check\n'
+        printf 'synth -flatten\n'
+    fi
+
+    printf 'write_verilog -noattr %s\n' "$NETLIST"
+} > "$YOSYS_SCRIPT"
+
+# ── run Yosys ─────────────────────────────────────────────────────────────────
+echo "[yosys-then-ivlog] Synthesizing with Yosys..." >&2
+if ! yosys -q "$YOSYS_SCRIPT" 2>&1 | sed 's/^/  [yosys] /' >&2; then
+    echo "[yosys-then-ivlog] Synthesis FAILED — not synthesizable." >&2
+    exit 1
+fi
+echo "[yosys-then-ivlog] Synthesis OK." >&2
+
+# ── run iverilog on gate-level netlist ────────────────────────────────────────
+echo "[yosys-then-ivlog] Compiling gate-level netlist with iverilog..." >&2
+exec iverilog "${IV_ARGS[@]}" "${IV_ONLY[@]}" "$SIMLIB" "$NETLIST"
