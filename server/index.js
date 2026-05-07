@@ -120,7 +120,19 @@ app.post('/api/simulate', async (req, res) => {
 
   // Find any .vcd file in the workDir
   const vcdFile = findVcdFile(workDir);
-  res.json({ output, vcd: vcdFile });
+
+  // Read VCD content before the temp dir is removed
+  let vcdContent = null;
+  if (vcdFile) {
+    const vcdPath = path.join(workDir, vcdFile);
+    try {
+      vcdContent = fs.readFileSync(vcdPath, 'utf8');
+    } catch (e) {
+      console.error('Could not read VCD file:', e.message);
+    }
+  }
+
+  res.json({ output, vcd: vcdFile, vcd_content: vcdContent });
 
   // Remove the entire temp directory instead of individual files
   try {

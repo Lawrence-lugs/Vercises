@@ -46,13 +46,45 @@ function ExerciseView() {
   const [simOpen, setSimOpen]       = useState(false);
   const [simMounted, setSimMounted] = useState(false);
 
+  // ── Waveform viewer (Surfer) ──────────────────────────────
+  const surferRef    = useRef(null);
+  const blobUrlRef   = useRef(null);
+  const [surferReady, setSurferReady]   = useState(false);
+  const [panelTab, setPanelTab]         = useState('output'); // 'output' | 'waveform'
+
   // ── Draggable vertical divider ────────────────────────────
   const [dividerX, setDividerX] = useState(Math.round(window.innerWidth * 0.40));
-  const dragging   = useRef(false);
+  const dragging     = useRef(false);
   const containerRef = useRef(null);
   const rightPaneRef = useRef(null);
 
   const exercise = getExerciseFromPath();
+
+  // ── Surfer postMessage coordination ──────────────────────
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.data?.command === 'surfer-loaded') {
+        setSurferReady(true);
+        surferRef.current?.contentWindow?.postMessage({ command: 'ToggleMenu' }, '*');
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  function loadVcdIntoSurfer(vcdText) {
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+    const blob    = new Blob([vcdText], { type: 'text/plain' });
+    const blobUrl = URL.createObjectURL(blob);
+    blobUrlRef.current = blobUrl;
+    surferRef.current?.contentWindow?.postMessage(
+      { command: 'LoadUrl', url: blobUrl },
+      '*'
+    );
+  }
 
   // ── Load exercise data ────────────────────────────────────
   useEffect(() => {
@@ -119,9 +151,15 @@ function ExerciseView() {
     setOutputAnim(false);
     setOutput(data.output);
     setIsRunning(false);
+    if (data.vcd_content) {
+      loadVcdIntoSurfer(data.vcd_content);
+      setPanelTab('waveform');
+    } else {
+      setPanelTab('output');
+    }
     setTimeout(() => setOutputAnim(true), 10);
     setTimeout(() => setRunCooldown(false), 1000);
-  }, [runCooldown, tabs, hiddenFiles, exercise, simCmd, simArgs, runCmd, enableArgs]);
+  }, [runCooldown, tabs, hiddenFiles, exercise, simCmd, simArgs, runCmd, enableArgs, surferReady]);
 
   const handleClosePanel = () => {
     setSimOpen(false);
@@ -279,21 +317,23 @@ function ExerciseView() {
             </div>
           )}
 
-          {/* Slide-up sim panel — scoped to right column */}
-          {simMounted && (
-            <SimulationPanel
-              open={simOpen}
-              onClose={handleClosePanel}
-              isRunning={isRunning}
-              simCmd={simCmd}
-              runCmd={runCmd}
-              enableArgs={enableArgs}
-              simArgs={simArgs}
-              onSimArgsChange={setSimArgs}
-              output={output}
-              outputAnim={outputAnim}
-            />
-          )}
+          {/* Simulation panel — always in the DOM so the Surfer WASM stays loaded */}
+          <SimulationPanel
+            open={simOpen}
+            mounted={simMounted}
+            onClose={handleClosePanel}
+            isRunning={isRunning}
+            simCmd={simCmd}
+            runCmd={runCmd}
+            enableArgs={enableArgs}
+            simArgs={simArgs}
+            onSimArgsChange={setSimArgs}
+            output={output}
+            outputAnim={outputAnim}
+            panelTab={panelTab}
+            onPanelTabChange={setPanelTab}
+            surferRef={surferRef}
+          />
         </div>
       </div>
     </div>
@@ -304,9 +344,11 @@ function ExerciseView() {
 // Simulation slide-up panel (absolute inside right column)
 // ─────────────────────────────────────────────────────────────
 function SimulationPanel({
-  open, onClose, isRunning,
+  open, mounted, onClose, isRunning,
   simCmd, runCmd, enableArgs, simArgs, onSimArgsChange,
   output, outputAnim,
+  panelTab, onPanelTabChange,
+  surferRef,
 }) {
   const [animated, setAnimated] = useState(false);
 
@@ -317,6 +359,8 @@ function SimulationPanel({
 
   const visible = animated && open;
 
+  // When not mounted (no run yet), keep the panel hidden but in the DOM
+  // so the Surfer iframe loads its WASM immediately
   return (
     <div
       className={[
@@ -367,8 +411,34 @@ function SimulationPanel({
         </button>
       </div>
 
-      {/* Output */}
-      <div className="flex-1 overflow-y-auto bg-[#f8f9fa] p-4">
+      {/* Tab bar */}
+      <div className="flex border-b border-[#dee2e6] shrink-0 bg-white text-xs">
+        <button
+          onClick={() => onPanelTabChange('output')}
+          className={[
+            'px-4 py-1.5 font-medium transition-colors',
+            panelTab === 'output'
+              ? 'border-b-2 border-[#6B0D1A] text-[#6B0D1A]'
+              : 'text-[#616161] hover:text-gray-800',
+          ].join(' ')}
+        >
+          Output
+        </button>
+        <button
+          onClick={() => onPanelTabChange('waveform')}
+          className={[
+            'px-4 py-1.5 font-medium transition-colors',
+            panelTab === 'waveform'
+              ? 'border-b-2 border-[#6B0D1A] text-[#6B0D1A]'
+              : 'text-[#616161] hover:text-gray-800',
+          ].join(' ')}
+        >
+          Waveform
+        </button>
+      </div>
+
+      {/* Output tab content */}
+      <div className={['flex-1 overflow-y-auto bg-[#f8f9fa] p-4', panelTab === 'output' ? 'block' : 'hidden'].join(' ')}>
         {isRunning && !output ? (
           <p className="text-[#616161] text-sm italic">Running simulation…</p>
         ) : (
@@ -381,6 +451,20 @@ function SimulationPanel({
             {output || <span className="text-[#616161] italic">No output yet.</span>}
           </pre>
         )}
+      </div>
+
+      {/* Waveform tab — iframe is always in the DOM; CSS hides it when not active */}
+      <div
+        className="flex-1 overflow-hidden"
+        style={{ display: panelTab === 'waveform' ? 'block' : 'none' }}
+      >
+        <iframe
+          ref={surferRef}
+          src="/exercises/surfer/index.html"
+          title="Waveform Viewer"
+          className="w-full h-full border-none"
+          sandbox="allow-scripts allow-same-origin"
+        />
       </div>
     </div>
   );

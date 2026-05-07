@@ -17,7 +17,7 @@ services:
       - "traefik.http.routers.myapp.rule=PathPrefix(`/exercises`)"
       - "traefik.http.routers.myapp.entrypoints=web"
       - "traefik.http.services.myapp.loadbalancer.server.port=5173"
-    command: ["sh", "-c", "npm install && npm run dev"]
+    command: ["sh", "-c", "mkdir -p /app/client/public/surfer && cp -rn /app/surfer-static/. /app/client/public/surfer/ && npm install && npm run dev"]
   vercises-server:
     restart: unless-stopped
     build:

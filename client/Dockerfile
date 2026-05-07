@@ -7,32 +7,27 @@ WORKDIR /app/client
 COPY package*.json ./
 RUN npm install
 
-# WORKDIR /app/vaporview
-# # Install build dependencies for vaporview
-# RUN apt-get update && apt-get install -y curl build-essential pkg-config libssl-dev
-
-# # Install Rust and wasm-pack
-# RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-# ENV PATH="/root/.cargo/bin:$PATH"
-
-# # Install vaporview dependencies and build webview
-# COPY ../vaporview/package*.json ./
-# RUN npm install
-# COPY ../vaporview ./
-
-# # Add wasm32 target for Rust
-# RUN cargo update
-# RUN cargo install wasm-tools
-# RUN rustup target add wasm32-unknown-unknown
-# RUN cargo build --target wasm32-unknown-unknown --release
-
-# # Build vaporview webview
-# RUN npm run build
-# RUN npx tsc -b
-
-WORKDIR /app/client
-# # Copy vaporview webview build output to client public folder
-# RUN mkdir -p public/vaporview && cp -r /app/vaporview/dist/* public/vaporview/
+# Download Surfer pre-compiled WASM build (pinned to v0.7.0)
+# Stored outside the volume-mounted public/ so it survives the ./exercises volume override.
+# The startup command (in docker-compose) copies it to public/surfer/ at runtime.
+# Check https://gitlab.com/surfer-project/surfer/-/releases for newer tags.
+RUN apt-get update && apt-get install -y --no-install-recommends unzip curl \
+ && SURFER_TAG="v0.7.0" \
+ && curl -fsSL \
+      "https://gitlab.com/surfer-project/surfer/-/jobs/artifacts/${SURFER_TAG}/download?job=pages_build" \
+      -o /tmp/surfer.zip \
+ && mkdir -p /tmp/surfer-extracted \
+ && unzip -q /tmp/surfer.zip -d /tmp/surfer-extracted \
+ && echo "=== Extracted zip contents ===" && find /tmp/surfer-extracted -maxdepth 3 -type f | head -30 \
+ && mkdir -p /app/surfer-static \
+ && SURFER_IDX=$(find /tmp/surfer-extracted -name 'index.html' | head -1) \
+ && SURFER_DIR=$(dirname "$SURFER_IDX") \
+ && cp -r "$SURFER_DIR"/. /app/surfer-static/ \
+ && sed -i \
+      's|/\*SURFER_SETUP_HOOKS\*/|window.parent.postMessage({command:"surfer-loaded"},"*");|g' \
+      /app/surfer-static/index.html \
+ && rm -rf /tmp/surfer.zip /tmp/surfer-extracted \
+ && apt-get purge -y unzip curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 5173
 CMD ["npm", "run", "dev"]
