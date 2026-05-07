@@ -54,9 +54,13 @@ function ExerciseView() {
 
   // ── Draggable vertical divider ────────────────────────────
   const [dividerX, setDividerX] = useState(Math.round(window.innerWidth * 0.40));
-  const dragging     = useRef(false);
-  const containerRef = useRef(null);
-  const rightPaneRef = useRef(null);
+  const dragging        = useRef(false);
+  const panelDragging   = useRef(false);
+  const containerRef    = useRef(null);
+  const rightPaneRef    = useRef(null);
+
+  // ── Panel height (px) — draggable ─────────────────────────
+  const [panelHeight, setPanelHeight] = useState(null); // null = use CSS default (42%)
 
   const exercise = getExerciseFromPath();
 
@@ -166,14 +170,29 @@ function ExerciseView() {
     setTimeout(() => setSimMounted(false), 260);
   };
 
-  // ── Divider drag ──────────────────────────────────────────
+  // ── Divider drag (horizontal) ──────────────────────────────
   useEffect(() => {
     const onMove = e => {
-      if (!dragging.current) return;
-      const cw = containerRef.current?.offsetWidth || window.innerWidth;
-      setDividerX(Math.max(260, Math.min(e.clientX, cw - 300)));
+      if (dragging.current) {
+        const cw = containerRef.current?.offsetWidth || window.innerWidth;
+        setDividerX(Math.max(260, Math.min(e.clientX, cw - 300)));
+      }
+      if (panelDragging.current) {
+        const rp = rightPaneRef.current;
+        if (!rp) return;
+        const rpRect = rp.getBoundingClientRect();
+        const newH = rpRect.bottom - e.clientY;
+        const minH = 120;
+        const maxH = rpRect.height - 60;
+        setPanelHeight(Math.max(minH, Math.min(newH, maxH)));
+      }
     };
-    const onUp = () => { dragging.current = false; };
+    const onUp = () => {
+      dragging.current     = false;
+      panelDragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     return () => {
@@ -181,6 +200,12 @@ function ExerciseView() {
       window.removeEventListener('mouseup', onUp);
     };
   }, []);
+
+  const startPanelDrag = () => {
+    panelDragging.current = true;
+    document.body.style.cursor     = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  };
 
   const exerciseLabel = exercise
     ? exercise.charAt(0).toUpperCase() + exercise.slice(1)
@@ -333,6 +358,8 @@ function ExerciseView() {
             panelTab={panelTab}
             onPanelTabChange={setPanelTab}
             surferRef={surferRef}
+            panelHeight={panelHeight}
+            onPanelDragStart={startPanelDrag}
           />
         </div>
       </div>
@@ -349,6 +376,7 @@ function SimulationPanel({
   output, outputAnim,
   panelTab, onPanelTabChange,
   surferRef,
+  panelHeight, onPanelDragStart,
 }) {
   const [animated, setAnimated] = useState(false);
 
@@ -359,8 +387,11 @@ function SimulationPanel({
 
   const visible = animated && open;
 
-  // When not mounted (no run yet), keep the panel hidden but in the DOM
-  // so the Surfer iframe loads its WASM immediately
+  // panelHeight null → use CSS default (42%); otherwise use explicit px height
+  const heightStyle = panelHeight != null
+    ? { height: panelHeight, minHeight: 120, maxHeight: '90%' }
+    : { height: '42%', minHeight: '180px', maxHeight: '58%' };
+
   return (
     <div
       className={[
@@ -368,11 +399,17 @@ function SimulationPanel({
         'bg-white border-t-2 border-[#6B0D1A]',
         'shadow-[0_-4px_20px_rgba(107,13,26,0.10)]',
         'flex flex-col',
-        'transition-transform duration-[260ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
+        panelHeight == null ? 'transition-transform duration-[260ms] ease-[cubic-bezier(0.4,0,0.2,1)]' : '',
         visible ? 'translate-y-0' : 'translate-y-full',
       ].join(' ')}
-      style={{ height: '42%', minHeight: '180px', maxHeight: '58%' }}
+      style={heightStyle}
     >
+      {/* Drag handle — grab to resize panel height */}
+      <div
+        onMouseDown={onPanelDragStart}
+        className="absolute top-0 left-0 right-0 h-1.5 cursor-ns-resize bg-transparent hover:bg-[#A52033] transition-colors z-10"
+        title="Drag to resize"
+      />
       {/* Panel header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-[#dee2e6] shrink-0 bg-white">
         <div className="flex items-center gap-2 flex-wrap">
