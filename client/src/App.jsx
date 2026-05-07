@@ -29,6 +29,12 @@ function ExerciseView() {
   const [activeTab, setActiveTab]     = useState(0);
   const [hiddenFiles, setHiddenFiles] = useState([]);
 
+  // ── New-file tab editing state ────────────────────────────
+  const [allowNewFiles, setAllowNewFiles] = useState(false);
+  const [editingTab, setEditingTab]       = useState(null);
+  const [editingIsNew, setEditingIsNew]   = useState(false);
+  const [editingValue, setEditingValue]   = useState('');
+
   // ── Left pane ─────────────────────────────────────────────
   const [hideInstructions, setHideInstructions] = useState(false);
 
@@ -61,6 +67,7 @@ function ExerciseView() {
   const panelDragging   = useRef(false);
   const containerRef    = useRef(null);
   const rightPaneRef    = useRef(null);
+  const editingActionRef = useRef(false);
 
   // ── Panel height (px) — draggable ─────────────────────────
   const [panelHeight, setPanelHeight] = useState(null); // null = use CSS default (42%)
@@ -99,10 +106,18 @@ function ExerciseView() {
       fetch(`/api/exercise/${exercise}`)
         .then(r => r.json())
         .then(data => {
-          setTabs(data.files);
+          const cfg = data.config || {};
+          const allowNew = cfg.allow_new_files === true;
+          let loadedTabs = data.files.map(f => ({ ...f, userCreated: false }));
+          if (allowNew) {
+            const stored = localStorage.getItem(`vercises-session-${exercise}`);
+            if (stored) {
+              try { loadedTabs = JSON.parse(stored).tabs; } catch (_) {}
+            }
+          }
+          setTabs(loadedTabs);
           setActiveTab(0);
           setInstructions(data.instructions);
-          const cfg = data.config || {};
           setSimCmd(cfg.simulation_command || 'iverilog');
           setRunCmd(cfg.run_command || './a.out');
           setHiddenFiles(cfg.hidden || []);
@@ -111,16 +126,25 @@ function ExerciseView() {
           }
           setEnableArgs(cfg.enable_args !== false);
           setHideInstructions(!!cfg.hide_instructions);
+          setAllowNewFiles(allowNew);
         });
     } else {
       setHideInstructions(true);
       fetch('/api/exercise/freeplay')
         .then(r => r.json())
         .then(data => {
-          setTabs(data.files);
+          const cfg = data.config || {};
+          const allowNew = cfg.allow_new_files === true;
+          let loadedTabs = data.files.map(f => ({ ...f, userCreated: false }));
+          if (allowNew) {
+            const stored = localStorage.getItem('vercises-session-freeplay');
+            if (stored) {
+              try { loadedTabs = JSON.parse(stored).tabs; } catch (_) {}
+            }
+          }
+          setTabs(loadedTabs);
           setActiveTab(0);
           setInstructions(data.instructions);
-          const cfg = data.config || {};
           setSimCmd(cfg.simulation_command || 'iverilog');
           setRunCmd(cfg.run_command || './a.out');
           setHiddenFiles(cfg.hidden || []);
@@ -128,6 +152,7 @@ function ExerciseView() {
             setSimArgs(cfg.default_args || data.files.map(f => f.name).join(' '));
           }
           setEnableArgs(cfg.enable_args !== false);
+          setAllowNewFiles(allowNew);
         });
     }
   }, [window.location.pathname]);
@@ -173,6 +198,68 @@ function ExerciseView() {
     setTimeout(() => setOutputAnim(true), 10);
     setTimeout(() => setRunCooldown(false), 1000);
   }, [runCooldown, tabs, hiddenFiles, exercise, simCmd, simArgs, runCmd, enableArgs, surferReady]);
+
+  // ── localStorage save ──────────────────────────────────────
+  useEffect(() => {
+    if (!allowNewFiles) return;
+    const key = `vercises-session-${exercise ?? 'freeplay'}`;
+    localStorage.setItem(key, JSON.stringify({ tabs }));
+  }, [tabs, allowNewFiles, exercise]);
+
+  // ── New-file tab handlers ─────────────────────────────────
+  const handleAddTab = useCallback(() => {
+    const newIdx = tabs.length;
+    setTabs(prev => [...prev, { name: '', content: '', userCreated: true }]);
+    setActiveTab(newIdx);
+    setEditingTab(newIdx);
+    setEditingIsNew(true);
+    setEditingValue('');
+  }, [tabs.length]);
+
+  const handleDeleteTab = useCallback((i) => {
+    setTabs(prev => prev.filter((_, idx) => idx !== i));
+    setActiveTab(prev => (prev >= i && prev > 0 ? prev - 1 : prev));
+  }, []);
+
+  const handleBeginRename = useCallback((i) => {
+    setEditingTab(i);
+    setEditingIsNew(false);
+    setEditingValue(tabs[i]?.name ?? '');
+  }, [tabs]);
+
+  const handleCommitEdit = useCallback(() => {
+    const name = editingValue.trim();
+    if (!name) {
+      if (editingIsNew) {
+        setTabs(prev => prev.filter((_, i) => i !== editingTab));
+        setActiveTab(prev => Math.max(0, prev - 1));
+      }
+      setEditingTab(null);
+      setEditingIsNew(false);
+      setEditingValue('');
+      return;
+    }
+    const isDuplicate = tabs.some((t, i) => i !== editingTab && t.name === name);
+    if (isDuplicate) return;
+    setTabs(prev => {
+      const next = [...prev];
+      next[editingTab] = { ...next[editingTab], name };
+      return next;
+    });
+    setEditingTab(null);
+    setEditingIsNew(false);
+    setEditingValue('');
+  }, [editingTab, editingIsNew, editingValue, tabs]);
+
+  const handleCancelEdit = useCallback(() => {
+    if (editingIsNew) {
+      setTabs(prev => prev.filter((_, i) => i !== editingTab));
+      setActiveTab(prev => Math.max(0, prev - 1));
+    }
+    setEditingTab(null);
+    setEditingIsNew(false);
+    setEditingValue('');
+  }, [editingTab, editingIsNew]);
 
   const handleClosePanel = () => {
     setSimOpen(false);
@@ -310,21 +397,66 @@ function ExerciseView() {
         <div ref={rightPaneRef} className="flex flex-col flex-1 h-full bg-[#f8f9fa] overflow-hidden relative">
 
           {/* Tab bar */}
-          <div className="flex bg-white border-b border-[#dee2e6] shrink-0">
-            {tabs.map((tab, i) => (
+          <div className="flex bg-white border-b border-[#dee2e6] shrink-0 items-stretch">
+            {tabs.map((tab, i) => {
+              if (editingTab === i) {
+                return (
+                  <input
+                    key={`tab-input-${i}`}
+                    autoFocus
+                    value={editingValue}
+                    onChange={e => setEditingValue(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter')  { editingActionRef.current = true; handleCommitEdit(); }
+                      if (e.key === 'Escape') { editingActionRef.current = true; handleCancelEdit(); }
+                    }}
+                    onBlur={() => {
+                      if (editingActionRef.current) { editingActionRef.current = false; return; }
+                      handleCommitEdit();
+                    }}
+                    className="px-3 py-2.5 text-sm font-medium font-mono border-b-2 border-[#6B0D1A] text-[#6B0D1A] bg-white focus:outline-none w-32 min-w-[80px]"
+                    spellCheck={false}
+                    placeholder="filename.v"
+                  />
+                );
+              }
+              return (
+                <button
+                  key={tab.name || `tab-${i}`}
+                  onClick={() => setActiveTab(i)}
+                  onDoubleClick={() => tab.userCreated && handleBeginRename(i)}
+                  className={[
+                    'group flex items-center gap-1 px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none whitespace-nowrap',
+                    i === activeTab
+                      ? 'border-b-2 border-[#6B0D1A] text-[#6B0D1A] bg-white'
+                      : 'text-[#616161] hover:text-gray-800 hover:bg-gray-50',
+                  ].join(' ')}
+                >
+                  {tab.name}
+                  {tab.userCreated && (
+                    <span
+                      role="button"
+                      onClick={e => { e.stopPropagation(); handleDeleteTab(i); }}
+                      className="ml-1 text-[#616161] hover:text-[#6B0D1A] text-base leading-none opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label={`Close ${tab.name}`}
+                    >
+                      ×
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+            {allowNewFiles && (
               <button
-                key={tab.name}
-                onClick={() => setActiveTab(i)}
-                className={[
-                  'px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none whitespace-nowrap',
-                  i === activeTab
-                    ? 'border-b-2 border-[#6B0D1A] text-[#6B0D1A] bg-white'
-                    : 'text-[#616161] hover:text-gray-800 hover:bg-gray-50',
-                ].join(' ')}
+                onClick={handleAddTab}
+                disabled={editingTab !== null}
+                className="px-3 py-2.5 text-sm text-[#616161] hover:text-[#6B0D1A] hover:bg-gray-50 transition-colors focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="New file"
+                title="New file"
               >
-                {tab.name}
+                +
               </button>
-            ))}
+            )}
           </div>
 
           {/* Monaco editor */}

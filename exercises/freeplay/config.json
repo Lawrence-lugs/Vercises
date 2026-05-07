@@ -4,5 +4,6 @@
     "default_args": "",
     "enable_args": true,
     "run_command": "./a.out",
-    "hide_instructions": true
+    "hide_instructions": true,
+    "allow_new_files": true
 }

@@ -78,6 +78,10 @@ app.get('/api/exercise/:exercise', async (req, res) => {
 app.post('/api/simulate', async (req, res) => {
   const { files, simCmd, runCmd } = req.body;
 
+  if (!Array.isArray(files) || !simCmd || !runCmd) {
+    return res.status(400).json({ error: 'Missing or invalid fields: files, simCmd, runCmd required.' });
+  }
+
   // Log for debug
   console.log(files)
 
