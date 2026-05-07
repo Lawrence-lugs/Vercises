@@ -29,6 +29,9 @@ function ExerciseView() {
   const [activeTab, setActiveTab]     = useState(0);
   const [hiddenFiles, setHiddenFiles] = useState([]);
 
+  // ── Left pane ─────────────────────────────────────────────
+  const [hideInstructions, setHideInstructions] = useState(false);
+
   // ── Markdown ──────────────────────────────────────────────
   const [instructions, setInstructions] = useState('');
 
@@ -107,19 +110,25 @@ function ExerciseView() {
             setSimArgs(cfg.default_args || data.files.map(f => f.name).join(' '));
           }
           setEnableArgs(cfg.enable_args !== false);
+          setHideInstructions(!!cfg.hide_instructions);
         });
     } else {
-      setTabs([
-        { name: 'alu.v',    content: '// Verilog code for ALU\nmodule alu(...);\nendmodule' },
-        { name: 'tb_alu.v', content: '// Testbench for ALU\nmodule tb_alu(...);\nendmodule' },
-      ]);
-      setActiveTab(0);
-      setInstructions('# Build an ALU\n\nDesign an ALU that supports add, subtract, and, or operations.\n\n## Specs\n- Inputs: a, b, op\n- Outputs: result');
-      setSimCmd('iverilog');
-      setRunCmd('./a.out');
-      setHiddenFiles([]);
-      setSimArgs('tb_alu.v alu.v');
-      setEnableArgs(true);
+      setHideInstructions(true);
+      fetch('/api/exercise/freeplay')
+        .then(r => r.json())
+        .then(data => {
+          setTabs(data.files);
+          setActiveTab(0);
+          setInstructions(data.instructions);
+          const cfg = data.config || {};
+          setSimCmd(cfg.simulation_command || 'iverilog');
+          setRunCmd(cfg.run_command || './a.out');
+          setHiddenFiles(cfg.hidden || []);
+          if (cfg.enable_args === true) {
+            setSimArgs(cfg.default_args || data.files.map(f => f.name).join(' '));
+          }
+          setEnableArgs(cfg.enable_args !== false);
+        });
     }
   }, [window.location.pathname]);
 
@@ -209,7 +218,7 @@ function ExerciseView() {
 
   const exerciseLabel = exercise
     ? exercise.charAt(0).toUpperCase() + exercise.slice(1)
-    : 'Demo';
+    : 'Freeplay';
 
   return (
     <div className="flex flex-col h-screen bg-white text-gray-800 font-sans overflow-hidden">
@@ -264,34 +273,38 @@ function ExerciseView() {
       <div ref={containerRef} className="flex flex-1 relative overflow-hidden">
 
         {/* Left: Instructions */}
-        <div
-          className="h-full overflow-y-auto bg-white shrink-0"
-          style={{ width: dividerX }}
-        >
-          <div className="md-prose px-12 py-10 max-w-2xl">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm, remarkMath]}
-              rehypePlugins={[rehypeKatex]}
-              components={{
-                img: ({ node, ...props }) => {
-                  let src = props.src || '';
-                  if (exercise && !src.startsWith('/') && !src.startsWith('http')) {
-                    src = `/exercises/${exercise}/${src}`;
-                  }
-                  return <img {...props} src={src} className="max-w-full h-auto rounded-md my-4" />;
-                },
-              }}
-            >
-              {instructions}
-            </ReactMarkdown>
+        {!hideInstructions && (
+          <div
+            className="h-full overflow-y-auto bg-white shrink-0"
+            style={{ width: dividerX }}
+          >
+            <div className="md-prose px-12 py-10 max-w-2xl">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+                components={{
+                  img: ({ node, ...props }) => {
+                    let src = props.src || '';
+                    if (exercise && !src.startsWith('/') && !src.startsWith('http')) {
+                      src = `/exercises/${exercise}/${src}`;
+                    }
+                    return <img {...props} src={src} className="max-w-full h-auto rounded-md my-4" />;
+                  },
+                }}
+              >
+                {instructions}
+              </ReactMarkdown>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Vertical divider */}
-        <div
-          className="w-1.5 shrink-0 bg-[#dee2e6] hover:bg-[#A52033] cursor-col-resize transition-colors z-10"
-          onMouseDown={() => { dragging.current = true; }}
-        />
+        {!hideInstructions && (
+          <div
+            className="w-1.5 shrink-0 bg-[#dee2e6] hover:bg-[#A52033] cursor-col-resize transition-colors z-10"
+            onMouseDown={() => { dragging.current = true; }}
+          />
+        )}
 
         {/* Right: Editor + slide-up sim panel */}
         <div ref={rightPaneRef} className="flex flex-col flex-1 h-full bg-[#f8f9fa] overflow-hidden relative">

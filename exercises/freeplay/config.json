@@ -3,5 +3,6 @@
     "simulation_command": "iverilog",
     "default_args": "",
     "enable_args": true,
-    "run_command": "./a.out"
+    "run_command": "./a.out",
+    "hide_instructions": true
 }
