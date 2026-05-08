@@ -2,30 +2,11 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
-const { execFile } = require('child_process');
-const util = require('util');
 const listExercises = require('./listExercises');
-
-const execFilePromise = util.promisify(execFile);
-
-// Allowed simulation commands (first token only)
-const SIM_CMD_WHITELIST = ['iverilog', 'yosys-then-ivlog'];
-// Allowed run commands: must be a relative path (e.g. ./a.out, ./build/a.out)
-const RUN_CMD_PATTERN = /^\.\//;
+const { runSimulation, cleanupOrphans } = require('./simulator');
 
 const app = express();
 const PORT = 3000;
-
-// Utility function to find any .vcd file in a directory
-function findVcdFile(dir) {
-  const files = fs.readdirSync(dir);
-  for (const fname of files) {
-    if (fname.endsWith('.vcd')) {
-      return fname;
-    }
-  }
-  return null;
-}
 
 // Expose assets in exercises folder as static files so that markdown renders properly
 // app.use(express.static(path.join('/app/exercises')));
@@ -90,103 +71,16 @@ app.post('/api/simulate', async (req, res) => {
     return res.status(400).json({ error: 'Missing or invalid fields: files array required.' });
   }
 
-  // Validate simCmd if provided
-  if (simCmd) {
-    const simBin = simCmd.trim().split(/\s+/)[0];
-    if (!SIM_CMD_WHITELIST.includes(simBin)) {
-      return res.status(400).json({ error: `Simulation command '${simBin}' is not allowed.` });
-    }
-  }
-
-  // Validate runCmd if provided
-  if (runCmd) {
-    const runBin = runCmd.trim().split(/\s+/)[0];
-    if (!RUN_CMD_PATTERN.test(runBin)) {
-      return res.status(400).json({ error: `Run command '${runBin}' is not allowed. Must be a relative path (e.g. ./a.out).` });
-    }
-  }
-
-  // Log for debug
-  console.log(files);
-
-  const workDir = path.join('/tmp', 'vercises-tmp');
-  if (!fs.existsSync(workDir)) fs.mkdirSync(workDir);
-  // Write files
-  for (const file of files) {
-    fs.writeFileSync(path.join(workDir, file.name), file.content);
-  }
-
-  let output = '';
-  let compilationFailed = false;
-
-  // Run simulation/synthesis command (skipped when simCmd is empty)
-  if (simCmd) {
-    const simParts = simCmd.trim().split(/\s+/);
-    try {
-      const { stdout, stderr } = await execFilePromise(simParts[0], simParts.slice(1), { cwd: workDir });
-      output += stdout;
-      output += stderr;
-    } catch (err) {
-      output += err.stderr || '';
-      output += err.stdout || '';
-      if (!err.stderr && !err.stdout) output += `Error: ${err.message}\n`;
-      compilationFailed = true;
-    }
-  }
-
-  // Print the contents of the temporary directory for debugging
-  console.log('Temporary directory contents:', fs.readdirSync(workDir));
-
-  // Run the output binary (skipped when runCmd is empty or compilation failed)
-  if (runCmd && !compilationFailed) {
-    const runParts = runCmd.trim().split(/\s+/);
-    try {
-      const { stdout, stderr } = await execFilePromise(runParts[0], runParts.slice(1), { cwd: workDir });
-      output += stdout;
-      output += stderr;
-    } catch (err) {
-      output += err.stderr || '';
-      output += err.stdout || '';
-      if (!err.stderr && !err.stdout) output += `Error: ${err.message}\n`;
-    }
-  }
-
-  // Find any .vcd file in the workDir
-  const vcdFile = findVcdFile(workDir);
-
-  // Read VCD content before the temp dir is removed
-  let vcdContent = null;
-  if (vcdFile) {
-    const vcdPath = path.join(workDir, vcdFile);
-    try {
-      vcdContent = fs.readFileSync(vcdPath, 'utf8');
-    } catch (e) {
-      console.error('Could not read VCD file:', e.message);
-    }
-  }
-
-  // Read gate-level netlist if produced (e.g. by yosys-then-ivlog)
-  let netlistContent = null;
-  const netlistPath = path.join(workDir, 'netlist.v');
-  if (fs.existsSync(netlistPath)) {
-    try {
-      netlistContent = fs.readFileSync(netlistPath, 'utf8');
-    } catch (e) {
-      console.error('Could not read netlist.v:', e.message);
-    }
-  }
-
-  res.json({ output, vcd: vcdFile, vcd_content: vcdContent, netlist_content: netlistContent });
-
-  // Remove the entire temp directory instead of individual files
   try {
-    fs.rmSync(workDir, { recursive: true, force: true });
+    const result = await runSimulation({ files, simCmd, runCmd });
+    res.json(result);
   } catch (err) {
-    console.error('Failed to remove temp directory:', err.message);
+    const status = err.status || 500;
+    res.status(status).json({ error: err.message || 'Internal server error' });
   }
-
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
+  cleanupOrphans();
 });

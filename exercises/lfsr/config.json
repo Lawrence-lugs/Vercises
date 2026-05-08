@@ -2,5 +2,5 @@
     "simulation_command": "yosys-then-ivlog lfsr.v -- tb_lfsr.v",
     "default_args": "",
     "enable_args": false,
-    "run_command": "./a.out"
+    "run_command": "vvp a.out"
 }

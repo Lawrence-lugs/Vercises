@@ -1,9 +1,9 @@
 {
     "hidden": [],
-    "simulation_command": "iverilog",
+    "simulation_command": "",
     "default_args": "",
     "enable_args": true,
-    "run_command": "./a.out",
+    "run_command": "vvp a.out",
     "hide_instructions": true,
     "allow_new_files": true,
     "allow_rename_original_files": true

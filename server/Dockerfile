@@ -1,12 +1,6 @@
 FROM node:20-bullseye
-# Install Verilog simulators + synthesis
-RUN apt-get update && \
-    apt-get install -y iverilog verilator yosys && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Install yosys-then-ivlog
-COPY yosys-then-ivlog /usr/local/bin/yosys-then-ivlog
-RUN chmod +x /usr/local/bin/yosys-then-ivlog
+# EDA tools are intentionally absent — simulations run in ephemeral vercises-sim containers.
+# The server only needs Node.js and the Docker socket to orchestrate them.
 
 COPY . /app/server
 WORKDIR /app/server

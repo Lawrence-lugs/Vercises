@@ -1,4 +1,13 @@
 services:
+  # Build-only service — produces the vercises-sim:latest image used by ephemeral simulation containers.
+  vercises-sim:
+    build:
+      context: .
+      dockerfile: sim/Dockerfile
+    image: vercises-sim:latest
+    profiles:
+      - build-only
+
   vercises-client:
     restart: unless-stopped
     build:
@@ -23,6 +32,10 @@ services:
       - ./server:/app/server
       - /app/server/node_modules
       - ./exercises:/app/exercises
+      # Docker socket: allows the server to spawn ephemeral simulation containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Share host /tmp so bind-mount paths the server writes resolve on the host daemon
+      - /tmp:/tmp
     ports:
       - "3000:3000"
     networks:

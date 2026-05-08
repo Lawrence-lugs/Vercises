@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vercises — System Architecture</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+        },
+      },
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        primaryColor: '#7c3aed',
+        primaryTextColor: '#e4e4e7',
+        primaryBorderColor: '#52525b',
+        lineColor: '#71717a',
+        secondaryColor: '#18181b',
+        tertiaryColor: '#27272a',
+        background: '#09090b',
+        mainBkg: '#18181b',
+        nodeBorder: '#52525b',
+        clusterBkg: '#18181b',
+        titleColor: '#e4e4e7',
+        edgeLabelBackground: '#27272a',
+        fontFamily: '"JetBrains Mono", monospace',
+      },
+    });
+  </script>
+  <style>
+    .prose code { font-family: 'JetBrains Mono', monospace; }
+    .mermaid svg { max-width: 100%; height: auto; }
+    .badge { @apply inline-block rounded px-2 py-0.5 text-xs font-semibold font-mono; }
+  </style>
+</head>
+
+<body class="bg-zinc-950 text-zinc-200 font-sans antialiased">
+
+  <!-- ─── Top nav ─────────────────────────────────────────────────────────── -->
+  <nav class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur">
+    <div class="mx-auto max-w-5xl flex items-center gap-6 px-6 py-3 text-sm">
+      <span class="font-bold text-violet-400 text-base tracking-tight">Vercises</span>
+      <a href="index.html"              class="text-zinc-400 hover:text-zinc-100 transition-colors">Teacher Guide</a>
+      <a href="#overview"               class="text-zinc-400 hover:text-zinc-100 transition-colors">Overview</a>
+      <a href="#request-lifecycle"      class="text-zinc-400 hover:text-zinc-100 transition-colors">Request Lifecycle</a>
+      <a href="#container-security"     class="text-zinc-400 hover:text-zinc-100 transition-colors">Container Security</a>
+      <a href="#server-internals"       class="text-zinc-400 hover:text-zinc-100 transition-colors">Server Internals</a>
+      <a href="#deployment"             class="text-zinc-400 hover:text-zinc-100 transition-colors">Deployment</a>
+      <a href="https://github.com/Lawrence-lugs/Vercises" target="_blank"
+         class="ml-auto text-zinc-500 hover:text-zinc-100 transition-colors">GitHub ↗</a>
+    </div>
+  </nav>
+
+  <main class="mx-auto max-w-5xl px-6 py-16 space-y-24">
+
+    <!-- ─── Hero ──────────────────────────────────────────────────────────── -->
+    <section id="overview">
+      <div class="mb-4 inline-block rounded-full bg-violet-900/40 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-violet-400">
+        Architecture Reference
+      </div>
+      <h1 class="text-4xl font-bold text-white leading-tight mb-4">System Architecture</h1>
+      <p class="text-zinc-400 text-lg max-w-2xl leading-relaxed">
+        Vercises runs user-submitted Verilog in fully isolated, ephemeral Docker containers —
+        one per simulation request. Each container is created from scratch, given no network access,
+        no privilege escalation path, and a hard-capped lifetime of 30 seconds, then destroyed.
+      </p>
+
+      <!-- component chips -->
+      <div class="mt-8 flex flex-wrap gap-3">
+        <span class="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300">React + Vite (client)</span>
+        <span class="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300">Node.js / Express (server)</span>
+        <span class="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300">dockerode (Docker SDK)</span>
+        <span class="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300">vercises-sim image (EDA tools)</span>
+        <span class="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300">Traefik (reverse proxy)</span>
+        <span class="rounded-lg bg-zinc-800 px-3 py-1.5 text-sm text-zinc-300">Surfer (WASM waveform viewer)</span>
+      </div>
+    </section>
+
+    <!-- ─── Full system graph ─────────────────────────────────────────────── -->
+    <section id="request-lifecycle">
+      <h2 class="text-2xl font-bold text-white mb-2 pb-2 border-b border-zinc-800">Full System Graph</h2>
+      <p class="text-zinc-400 text-sm mb-6">End-to-end flow of a single simulation request, from browser keystroke to waveform display.</p>
+
+      <div class="bg-zinc-900 border border-zinc-800 rounded-xl p-6 overflow-x-auto">
+        <div class="mermaid">
+flowchart TD
+    subgraph Browser["Browser"]
+        UI["Monaco Editor\n+ Run button"]
+        Surfer["Surfer\nWaveform Viewer\n(WASM)"]
+    end
+
+    subgraph ClientContainer["vercises-client container (Vite / React)"]
+        App["App.jsx\nAPI calls + state"]
+    end
+
+    subgraph Proxy["Traefik reverse proxy"]
+        T{{"PathPrefix routing\n/api → server\n/* → client"}}
+    end
+
+    subgraph ServerContainer["vercises-server container (Node.js)"]
+        API["Express\nPOST /api/simulate"]
+        Sim["simulator.js\nvalidation · semaphore\norchestration"]
+        TmpDir["/tmp/vercises-req-&lt;uuid&gt;\n(host path, bind-mounted)"]
+    end
+
+    subgraph DockerHost["Docker Host"]
+        Sock["/var/run/docker.sock"]
+        HostTmp["/tmp  (host)"]
+    end
+
+    subgraph SimContainerA["vercises-sim container A  (compile)"]
+        IVL["iverilog\nor yosys-then-ivlog"]
+    end
+
+    subgraph SimContainerB["vercises-sim container B  (run)"]
+        AOUT["./a.out"]
+    end
+
+    subgraph ExercisesVol["exercises/ volume"]
+        EX["Verilog files\nconfig.json\ninstructions.md"]
+    end
+
+    UI -->|"files[] + simCmd + runCmd\nHTTP POST /api/simulate"| T
+    T --> API
+    API --> Sim
+    Sim -->|"write user files"| TmpDir
+    TmpDir -.->|"same path on host"| HostTmp
+    Sim -->|"createContainer\nstart · wait · remove"| Sock
+    Sock -->|"bind-mount /tmp/vercises-req-&lt;uuid&gt;:/workspace"| SimContainerA
+    SimContainerA -->|"stdout + stderr"| Sim
+    Sim -->|"if compile OK"| Sock
+    Sock -->|"same bind-mount"| SimContainerB
+    SimContainerB -->|"stdout + stderr + .vcd + netlist.v"| Sim
+    Sim -->|"read artefacts\nfrom TmpDir"| TmpDir
+    Sim -->|"rmSync TmpDir"| TmpDir
+    Sim -->|"{ output, vcd_content, netlist_content }"| API
+    API -->|"JSON response"| T
+    T --> App
+    App -->|"display output"| UI
+    App -->|"vcd bytes"| Surfer
+    EX -->|"GET /api/exercise/:id\nhidden files included"| API
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── Container security model ─────────────────────────────────────── -->
+    <section id="container-security">
+      <h2 class="text-2xl font-bold text-white mb-6 pb-2 border-b border-zinc-800">Container Security Model</h2>
+
+      <p class="text-zinc-400 mb-6 max-w-2xl">
+        Every simulation container is spawned with the following constraints. None of these are optional —
+        they are hardcoded in <code class="text-violet-300 bg-zinc-800 px-1 rounded">server/simulator.js</code>
+        and cannot be overridden by exercise config or user input.
+      </p>
+
+      <div class="overflow-x-auto rounded-xl border border-zinc-800">
+        <table class="w-full text-sm">
+          <thead class="bg-zinc-900 text-zinc-400 uppercase text-xs tracking-wider">
+            <tr>
+              <th class="px-4 py-3 text-left">Flag</th>
+              <th class="px-4 py-3 text-left">Value</th>
+              <th class="px-4 py-3 text-left">Effect</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800">
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3 font-mono text-violet-300">NetworkMode</td>
+              <td class="px-4 py-3 font-mono text-green-400">'none'</td>
+              <td class="px-4 py-3 text-zinc-400">No network interfaces at all — no loopback, no internet, no intranet</td>
+            </tr>
+            <tr class="bg-zinc-900">
+              <td class="px-4 py-3 font-mono text-violet-300">ReadonlyRootfs</td>
+              <td class="px-4 py-3 font-mono text-green-400">true</td>
+              <td class="px-4 py-3 text-zinc-400">Container root filesystem is immutable; writes only allowed in /workspace (bind) and /tmp (tmpfs)</td>
+            </tr>
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3 font-mono text-violet-300">CapDrop</td>
+              <td class="px-4 py-3 font-mono text-green-400">['ALL']</td>
+              <td class="px-4 py-3 text-zinc-400">All Linux capabilities dropped; no raw sockets, no mounts, no kernel module loading</td>
+            </tr>
+            <tr class="bg-zinc-900">
+              <td class="px-4 py-3 font-mono text-violet-300">SecurityOpt</td>
+              <td class="px-4 py-3 font-mono text-green-400">['no-new-privileges']</td>
+              <td class="px-4 py-3 text-zinc-400">Blocks privilege escalation via setuid/setgid binaries</td>
+            </tr>
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3 font-mono text-violet-300">Tmpfs /tmp</td>
+              <td class="px-4 py-3 font-mono text-green-400">noexec, nosuid, 64 MB</td>
+              <td class="px-4 py-3 text-zinc-400">Tools can write temp files but cannot execute binaries from /tmp, and total /tmp is capped</td>
+            </tr>
+            <tr class="bg-zinc-900">
+              <td class="px-4 py-3 font-mono text-violet-300">Memory</td>
+              <td class="px-4 py-3 font-mono text-green-400">256 MB</td>
+              <td class="px-4 py-3 text-zinc-400">Hard memory cap; process is OOM-killed if exceeded</td>
+            </tr>
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3 font-mono text-violet-300">NanoCpus</td>
+              <td class="px-4 py-3 font-mono text-green-400">0.5 CPUs</td>
+              <td class="px-4 py-3 text-zinc-400">CPU share limit; prevents monopolising the host under load</td>
+            </tr>
+            <tr class="bg-zinc-900">
+              <td class="px-4 py-3 font-mono text-violet-300">PidsLimit</td>
+              <td class="px-4 py-3 font-mono text-green-400">64</td>
+              <td class="px-4 py-3 text-zinc-400">Fork bomb mitigation; total process count inside the container is capped</td>
+            </tr>
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3 font-mono text-violet-300">User</td>
+              <td class="px-4 py-3 font-mono text-green-400">'1000:1000'</td>
+              <td class="px-4 py-3 text-zinc-400">Runs as non-root user <em>sim</em>; UID 1000 owns no host resources</td>
+            </tr>
+            <tr class="bg-zinc-900">
+              <td class="px-4 py-3 font-mono text-violet-300">Kill timeout</td>
+              <td class="px-4 py-3 font-mono text-green-400">30 s</td>
+              <td class="px-4 py-3 text-zinc-400">Container.kill() is called after 30 s regardless of state; prevents runaway simulations</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Command injection prevention -->
+      <div class="mt-8 rounded-xl border border-zinc-800 bg-zinc-900 p-6">
+        <h3 class="text-lg font-semibold text-white mb-3">Command Injection Prevention</h3>
+        <p class="text-zinc-400 text-sm mb-4">
+          <code class="text-violet-300 bg-zinc-800 px-1 rounded">simCmd</code> and
+          <code class="text-violet-300 bg-zinc-800 px-1 rounded">runCmd</code> are split into an argv array and passed
+          directly to <code class="text-violet-300 bg-zinc-800 px-1 rounded">docker.createContainer({ Cmd: argv })</code>
+          — never through a shell. Shell metacharacters such as
+          <code class="text-violet-300 bg-zinc-800 px-1 rounded">; &amp; | ` $( )</code> are inert.
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <p class="text-zinc-500 uppercase text-xs tracking-wider mb-2">simCmd whitelist</p>
+            <ul class="space-y-1 font-mono text-green-400">
+              <li>iverilog</li>
+              <li>yosys-then-ivlog</li>
+            </ul>
+            <p class="text-zinc-500 text-xs mt-2">First token only. Anything else → HTTP 400.</p>
+          </div>
+          <div>
+            <p class="text-zinc-500 uppercase text-xs tracking-wider mb-2">runCmd whitelist</p>
+            <ul class="space-y-1 font-mono text-green-400">
+              <li>vvp</li>
+            </ul>
+            <p class="text-zinc-500 text-xs mt-2">
+              <code class="text-violet-300 bg-zinc-800 px-1 rounded">./a.out</code> is intentionally blocked.
+              The compiled binary lives on a bind-mounted directory that inherits
+              <code class="text-violet-300 bg-zinc-800 px-1 rounded">noexec</code> from the host filesystem;
+              <code class="text-violet-300 bg-zinc-800 px-1 rounded">exec()</code>-ing it would fail.
+              <code class="text-violet-300 bg-zinc-800 px-1 rounded">vvp a.out</code> reads the iverilog
+              output as bytecode data — not as an exec()-ed binary — so
+              <code class="text-violet-300 bg-zinc-800 px-1 rounded">noexec</code> does not apply,
+              and no user-compiled ELF is ever exec()-ed by the OS.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Docker socket trade-off note -->
+      <div class="mt-6 rounded-xl border border-amber-900/40 bg-amber-950/20 p-5">
+        <h3 class="text-amber-400 font-semibold mb-2">⚠ Docker Socket Trade-off</h3>
+        <p class="text-zinc-400 text-sm">
+          Mounting <code class="text-violet-300 bg-zinc-800 px-1 rounded">/var/run/docker.sock</code> into the server
+          container gives the server process effective root on the host — a compromised server could spawn arbitrary
+          containers. For public deployments, consider wrapping the socket with
+          <a href="https://github.com/Tecnativa/docker-socket-proxy" target="_blank"
+             class="text-violet-400 hover:underline">Tecnativa/docker-socket-proxy</a>
+          to allow only the container lifecycle endpoints the server actually needs
+          (<code class="text-violet-300 bg-zinc-800 px-1 rounded">POST /containers/*</code>,
+           <code class="text-violet-300 bg-zinc-800 px-1 rounded">DELETE /containers/*</code>).
+        </p>
+      </div>
+    </section>
+
+    <!-- ─── Server internals ──────────────────────────────────────────────── -->
+    <section id="server-internals">
+      <h2 class="text-2xl font-bold text-white mb-6 pb-2 border-b border-zinc-800">Server Internals</h2>
+
+      <!-- File map -->
+      <h3 class="text-lg font-semibold text-white mb-4">File Map</h3>
+      <div class="overflow-x-auto rounded-xl border border-zinc-800 mb-10">
+        <table class="w-full text-sm">
+          <thead class="bg-zinc-900 text-zinc-400 uppercase text-xs tracking-wider">
+            <tr>
+              <th class="px-4 py-3 text-left">File</th>
+              <th class="px-4 py-3 text-left">Role</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800">
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3 font-mono text-violet-300">server/index.js</td>
+              <td class="px-4 py-3 text-zinc-400">Express app — defines all HTTP routes. The <code class="text-violet-300 bg-zinc-800 px-1 rounded">POST /api/simulate</code> handler now delegates entirely to <code class="text-violet-300 bg-zinc-800 px-1 rounded">simulator.js</code></td>
+            </tr>
+            <tr class="bg-zinc-900">
+              <td class="px-4 py-3 font-mono text-violet-300">server/simulator.js</td>
+              <td class="px-4 py-3 text-zinc-400">Container orchestrator — input validation, concurrency gate, per-request temp dir, two-stage container lifecycle, artefact collection, cleanup</td>
+            </tr>
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3 font-mono text-violet-300">server/listExercises.js</td>
+              <td class="px-4 py-3 text-zinc-400">Filesystem scan — returns a list of exercise directory names</td>
+            </tr>
+            <tr class="bg-zinc-900">
+              <td class="px-4 py-3 font-mono text-violet-300">server/yosys-then-ivlog</td>
+              <td class="px-4 py-3 text-zinc-400">Bash script — wraps Yosys synthesis + iverilog gate-level simulation. Copied into <code class="text-violet-300 bg-zinc-800 px-1 rounded">vercises-sim</code> image at build time</td>
+            </tr>
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3 font-mono text-violet-300">sim/Dockerfile</td>
+              <td class="px-4 py-3 text-zinc-400">Defines <code class="text-violet-300 bg-zinc-800 px-1 rounded">vercises-sim:latest</code> — Debian bookworm-slim + iverilog + yosys + non-root UID 1000. No Node.js.</td>
+            </tr>
+            <tr class="bg-zinc-900">
+              <td class="px-4 py-3 font-mono text-violet-300">server/Dockerfile</td>
+              <td class="px-4 py-3 text-zinc-400">Defines the Express server image — Node.js only. EDA tools removed; the server no longer runs them directly.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- API -->
+      <h3 class="text-lg font-semibold text-white mb-4">API Endpoints</h3>
+      <div class="overflow-x-auto rounded-xl border border-zinc-800 mb-10">
+        <table class="w-full text-sm">
+          <thead class="bg-zinc-900 text-zinc-400 uppercase text-xs tracking-wider">
+            <tr>
+              <th class="px-4 py-3 text-left">Method</th>
+              <th class="px-4 py-3 text-left">Path</th>
+              <th class="px-4 py-3 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800">
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3"><span class="badge bg-blue-900/50 text-blue-300">GET</span></td>
+              <td class="px-4 py-3 font-mono text-zinc-300">/api/exercises</td>
+              <td class="px-4 py-3 text-zinc-400">List all exercise names (directories under <code class="text-violet-300 bg-zinc-800 px-1 rounded">exercises/</code>)</td>
+            </tr>
+            <tr class="bg-zinc-900">
+              <td class="px-4 py-3"><span class="badge bg-blue-900/50 text-blue-300">GET</span></td>
+              <td class="px-4 py-3 font-mono text-zinc-300">/api/exercise/:id</td>
+              <td class="px-4 py-3 text-zinc-400">Return files, instructions, and config for one exercise. Hidden files are included in the payload (used by the simulation command).</td>
+            </tr>
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3"><span class="badge bg-violet-900/50 text-violet-300">POST</span></td>
+              <td class="px-4 py-3 font-mono text-zinc-300">/api/simulate</td>
+              <td class="px-4 py-3 text-zinc-400">Run a simulation. Returns <code class="text-violet-300 bg-zinc-800 px-1 rounded">{ output, vcd, vcd_content, netlist_content }</code>. Returns 400 on invalid commands, 429 when at concurrency limit.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Simulate request/response -->
+      <h3 class="text-lg font-semibold text-white mb-4">POST /api/simulate — Payload &amp; Response</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+        <div>
+          <p class="text-zinc-500 uppercase text-xs tracking-wider mb-2">Request body (JSON)</p>
+          <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm font-mono text-green-400 overflow-x-auto"><code>{
+  "files": [
+    { "name": "alu.v",    "content": "..." },
+    { "name": "tb_alu.v", "content": "..." }
+  ],
+  "simCmd": "iverilog tb_alu.v alu.v",
+  "runCmd": "./a.out"
+}</code></pre>
+        </div>
+        <div>
+          <p class="text-zinc-500 uppercase text-xs tracking-wider mb-2">Response body (JSON)</p>
+          <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm font-mono text-green-400 overflow-x-auto"><code>{
+  "output": "...",
+  "vcd": "counter.vcd",
+  "vcd_content": "$timescale ...",
+  "netlist_content": "module ... (yosys)"
+}</code></pre>
+        </div>
+      </div>
+
+      <!-- Concurrency & env vars -->
+      <h3 class="text-lg font-semibold text-white mb-4">Environment Variables</h3>
+      <div class="overflow-x-auto rounded-xl border border-zinc-800">
+        <table class="w-full text-sm">
+          <thead class="bg-zinc-900 text-zinc-400 uppercase text-xs tracking-wider">
+            <tr>
+              <th class="px-4 py-3 text-left">Variable</th>
+              <th class="px-4 py-3 text-left">Default</th>
+              <th class="px-4 py-3 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800">
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3 font-mono text-violet-300">SIM_IMAGE</td>
+              <td class="px-4 py-3 font-mono text-zinc-400">vercises-sim:latest</td>
+              <td class="px-4 py-3 text-zinc-400">Docker image used for simulation containers</td>
+            </tr>
+            <tr class="bg-zinc-900">
+              <td class="px-4 py-3 font-mono text-violet-300">SIM_TIMEOUT_MS</td>
+              <td class="px-4 py-3 font-mono text-zinc-400">30000</td>
+              <td class="px-4 py-3 text-zinc-400">Milliseconds before a container is forcibly killed</td>
+            </tr>
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3 font-mono text-violet-300">MAX_CONCURRENT_SIMS</td>
+              <td class="px-4 py-3 font-mono text-zinc-400">5</td>
+              <td class="px-4 py-3 text-zinc-400">Max simultaneous simulation requests. Excess requests receive HTTP 429.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── Simulation image ──────────────────────────────────────────────── -->
+    <section id="deployment">
+      <h2 class="text-2xl font-bold text-white mb-6 pb-2 border-b border-zinc-800">Deployment</h2>
+
+      <h3 class="text-lg font-semibold text-white mb-3">Container Map</h3>
+      <div class="overflow-x-auto rounded-xl border border-zinc-800 mb-10">
+        <table class="w-full text-sm">
+          <thead class="bg-zinc-900 text-zinc-400 uppercase text-xs tracking-wider">
+            <tr>
+              <th class="px-4 py-3 text-left">Container</th>
+              <th class="px-4 py-3 text-left">Image</th>
+              <th class="px-4 py-3 text-left">Lifetime</th>
+              <th class="px-4 py-3 text-left">Notes</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-zinc-800">
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3 font-mono text-violet-300">vercises-client</td>
+              <td class="px-4 py-3 font-mono text-zinc-300">node:20-bullseye (Vite)</td>
+              <td class="px-4 py-3 text-zinc-400">Persistent</td>
+              <td class="px-4 py-3 text-zinc-400">Serves React SPA + Surfer WASM via Vite dev server. Exercises volume mounted as static assets.</td>
+            </tr>
+            <tr class="bg-zinc-900">
+              <td class="px-4 py-3 font-mono text-violet-300">vercises-server</td>
+              <td class="px-4 py-3 font-mono text-zinc-300">node:20-bullseye</td>
+              <td class="px-4 py-3 text-zinc-400">Persistent</td>
+              <td class="px-4 py-3 text-zinc-400">Express API. Holds docker.sock mount and /tmp bind. No EDA tools installed.</td>
+            </tr>
+            <tr class="bg-zinc-950">
+              <td class="px-4 py-3 font-mono text-violet-300">vercises-sim (×N)</td>
+              <td class="px-4 py-3 font-mono text-zinc-300">vercises-sim:latest</td>
+              <td class="px-4 py-3 text-zinc-400">Ephemeral (~seconds)</td>
+              <td class="px-4 py-3 text-zinc-400">Spawned per simulation request. Debian slim + iverilog + yosys. Hard-killed after 30 s. Removed on exit.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="text-lg font-semibold text-white mb-3">Build &amp; Run</h3>
+      <p class="text-zinc-400 text-sm mb-4">
+        The simulation image must be built before starting the stack for the first time
+        (or after updating EDA tool versions). Because <code class="text-violet-300 bg-zinc-800 px-1 rounded">vercises-sim</code>
+        uses the <code class="text-violet-300 bg-zinc-800 px-1 rounded">build-only</code> profile, it is not started by
+        <code class="text-violet-300 bg-zinc-800 px-1 rounded">docker compose up</code> — only built.
+      </p>
+      <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm font-mono text-green-400 overflow-x-auto mb-6"><code># Build both the server image and the simulation image
+docker compose -f docker-compose.local.yml build
+
+# Start the stack (client + server only; sim containers are ephemeral)
+docker compose -f docker-compose.local.yml up</code></pre>
+
+      <p class="text-zinc-400 text-sm mb-4">For production with Traefik:</p>
+      <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm font-mono text-green-400 overflow-x-auto"><code>docker compose build
+docker compose up -d</code></pre>
+
+      <h3 class="text-lg font-semibold text-white mt-10 mb-3">Volume &amp; Mount Layout</h3>
+      <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm font-mono text-zinc-300 overflow-x-auto"><code>Docker Host
+├── /var/run/docker.sock   ← mounted into vercises-server (rw)
+└── /tmp/
+    └── vercises-req-&lt;uuid&gt;/   ← created per request by the server
+        ├── alu.v                    (user file)
+        ├── tb_alu.v                 (exercise file)
+        ├── a.out                    (compiled binary)
+        ├── counter.vcd              (waveform output)
+        └── netlist.v                (synthesis output, optional)
+            ↑
+            bind-mounted as /workspace inside each sim container</code></pre>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-zinc-800 mt-24 py-8">
+    <div class="mx-auto max-w-5xl px-6 flex items-center justify-between text-sm text-zinc-600">
+      <span>Vercises — System Architecture</span>
+      <a href="index.html" class="hover:text-zinc-400 transition-colors">← Teacher Guide</a>
+    </div>
+  </footer>
+
+</body>
+</html>
