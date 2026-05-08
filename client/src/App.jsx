@@ -327,6 +327,16 @@ function ExerciseView() {
           {exerciseLabel}
         </span>
 
+        <div className="flex items-center gap-3">
+        <a
+          href="https://lawrence-lugs.github.io/Vercises/"
+          target="_blank"
+          rel="noreferrer"
+          className="text-[#616161] hover:text-[#6B0D1A] text-sm transition-colors"
+          title="Documentation"
+        >
+          Docs ↗
+        </a>
         <button
           onClick={handleRun}
           disabled={runCooldown}
@@ -354,6 +364,7 @@ function ExerciseView() {
             </>
           )}
         </button>
+        </div>
       </header>
 
       {/* ── Main split area ──────────────────────────────────── */}

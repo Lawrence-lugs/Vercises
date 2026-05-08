@@ -81,6 +81,18 @@
         <li class="flex gap-4">
           <span class="flex-shrink-0 w-8 h-8 rounded-full bg-violet-700 text-white flex items-center justify-center font-bold text-sm">1</span>
           <div>
+            <p class="font-semibold text-zinc-100 mb-1">Install Docker Desktop</p>
+            <p class="text-zinc-400 text-sm mb-3">
+              If you don't have Docker yet, download and install
+              <a href="https://www.docker.com/products/docker-desktop/" target="_blank" class="text-violet-400 hover:underline">Docker Desktop</a>
+              for your OS. Launch it and make sure the Docker engine is running before continuing.
+            </p>
+          </div>
+        </li>
+
+        <li class="flex gap-4">
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-violet-700 text-white flex items-center justify-center font-bold text-sm">2</span>
+          <div>
             <p class="font-semibold text-zinc-100 mb-1">Clone the repository</p>
             <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm font-mono text-green-400 overflow-x-auto"><code>git clone https://github.com/Lawrence-lugs/Vercises.git
 cd Vercises</code></pre>
@@ -88,7 +100,7 @@ cd Vercises</code></pre>
         </li>
 
         <li class="flex gap-4">
-          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-violet-700 text-white flex items-center justify-center font-bold text-sm">2</span>
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-violet-700 text-white flex items-center justify-center font-bold text-sm">3</span>
           <div>
             <p class="font-semibold text-zinc-100 mb-1">Build and start the stack</p>
             <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm font-mono text-green-400 overflow-x-auto"><code>docker compose build
@@ -102,12 +114,13 @@ docker compose up</code></pre>
         </li>
 
         <li class="flex gap-4">
-          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-violet-700 text-white flex items-center justify-center font-bold text-sm">3</span>
+          <span class="flex-shrink-0 w-8 h-8 rounded-full bg-violet-700 text-white flex items-center justify-center font-bold text-sm">4</span>
           <div>
             <p class="font-semibold text-zinc-100 mb-1">Open the app</p>
-            <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm font-mono text-green-400 overflow-x-auto"><code>http://localhost/exercises</code></pre>
+            <pre class="bg-zinc-900 border border-zinc-800 rounded-lg p-4 text-sm font-mono text-green-400 overflow-x-auto"><code>http://localhost:5173/exercises</code></pre>
             <p class="mt-2 text-zinc-500 text-sm">
               The exercise list is auto-generated from the folders inside <code class="text-violet-300">exercises/</code>.
+              (The local compose exposes the client directly on port 5173. In the production deployment behind Traefik, it is on port 80 with no port suffix.)
             </p>
           </div>
         </li>
@@ -179,12 +192,34 @@ Verify your work with the provided testbench.</code></pre>
       </div>
 
       <!-- Simulating immediately -->
-      <div class="rounded-xl border border-violet-800/50 bg-violet-950/30 p-5">
+      <div class="rounded-xl border border-violet-800/50 bg-violet-950/30 p-5 mb-6">
         <p class="text-violet-300 font-semibold mb-1">No restart needed</p>
         <p class="text-zinc-400 text-sm">
           The exercise folder is volume-mounted into the container. Drop a new folder in
           <code class="text-violet-300">exercises/</code> and refresh the browser — it appears in the list immediately.
         </p>
+      </div>
+
+      <!-- Publishing to digital.eee -->
+      <div class="rounded-xl border border-amber-800/50 bg-amber-950/20 p-5">
+        <p class="text-amber-300 font-semibold mb-1">Publishing to digital.eee.upd.edu.ph</p>
+        <p class="text-zinc-400 text-sm leading-relaxed">
+          The live site at
+          <a href="https://digital.eee.upd.edu.ph" target="_blank" class="text-amber-300 hover:underline">digital.eee.upd.edu.ph</a>
+          tracks the <code class="text-amber-200">main</code> branch of this repository.
+          Once you've tested your exercise locally and are happy with it, open a
+          <strong class="text-zinc-200">pull request</strong> on GitHub against <code class="text-amber-200">main</code>.
+          After it is reviewed and merged, your exercise will automatically appear on the live site.
+        </p>
+        <div class="mt-4">
+          <a
+            href="https://github.com/Lawrence-lugs/Vercises/compare"
+            target="_blank"
+            class="inline-block rounded-lg bg-amber-700/40 hover:bg-amber-700/60 text-amber-200 px-4 py-2 text-sm font-semibold transition-colors"
+          >
+            Open a pull request on GitHub ↗
+          </a>
+        </div>
       </div>
     </section>
 
