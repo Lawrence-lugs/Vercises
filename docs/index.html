@@ -371,16 +371,16 @@ Verify your work with the provided testbench.</code></pre>
         </p>
         <ol class="mt-4 space-y-2 ml-4">
           <li class="flex gap-3 text-zinc-400">
-            <span class="text-violet-400 font-bold">1.</span>
-            Passes the design sources through <strong class="text-zinc-200">Yosys synthesis</strong>
+            <span class="text-violet-400 font-bold flex-shrink-0">1.</span>
+            <span>Passes the design sources through <strong class="text-zinc-200">Yosys synthesis</strong>
             (<code>synth -flatten</code>), generating a gate-level netlist.
-            If the design is not synthesizable, Yosys exits with an error — the student sees that immediately.
+            If the design is not synthesizable, Yosys exits with an error — the student sees that immediately.</span>
           </li>
           <li class="flex gap-3 text-zinc-400">
-            <span class="text-violet-400 font-bold">2.</span>
-            Passes the <strong class="text-zinc-200">gate-level netlist</strong> (plus Yosys's own
+            <span class="text-violet-400 font-bold flex-shrink-0">2.</span>
+            <span>Passes the <strong class="text-zinc-200">gate-level netlist</strong> (plus Yosys's own
             <code>simlib.v</code> cell library) to <code>iverilog</code> for simulation.
-            The testbench runs against the synthesized gates, not the behavioural model.
+            The testbench runs against the synthesized gates, not the behavioural model.</span>
           </li>
         </ol>
         <p class="mt-4 text-zinc-400 leading-relaxed">

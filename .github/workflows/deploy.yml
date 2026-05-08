@@ -5,9 +5,15 @@ on:
     branches: ["main"]
 
 jobs:
-  deploy:
-    runs-on: [self-hosted,digitaleee]
+  dispatch:
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Trigger Unified Root Deployment
-      run: sudo -u lawrence /home/lawrence/workspace/deploy.sh
+    - name: Trigger digital_eee_upd deployment
+      run: |
+        curl -fsS -X POST \
+          -H "Authorization: Bearer ${{ secrets.DISPATCH_TOKEN }}" \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          https://api.github.com/repos/Lawrence-lugs/digital_eee_upd/dispatches \
+          -d '{"event_type":"vercises-deploy"}'
