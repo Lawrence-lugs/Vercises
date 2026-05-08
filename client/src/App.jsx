@@ -192,11 +192,9 @@ function ExerciseView() {
     setOutputAnim(false);
     setOutput(data.output);
     setIsRunning(false);
+    setPanelTab('output');
     if (data.vcd_content) {
       loadVcdIntoSurfer(data.vcd_content);
-      setPanelTab('waveform');
-    } else {
-      setPanelTab('output');
     }
     setTimeout(() => setOutputAnim(true), 10);
     setTimeout(() => setRunCooldown(false), 1000);
@@ -550,23 +548,24 @@ function SimulationPanel({
 
   const visible = animated && open;
 
-  // panelHeight null → use CSS default (42%); otherwise use explicit px height
-  const heightStyle = panelHeight != null
-    ? { height: panelHeight, minHeight: 120, maxHeight: '90%' }
-    : { height: '42%', minHeight: '180px', maxHeight: '58%' };
+  // panelHeight null → use CSS default (42%); otherwise use explicit px height.
+  // When not visible, height collapses to 0 so Monaco's flex-1 area is never hidden.
+  const heightStyle = !visible
+    ? { height: 0 }
+    : panelHeight != null
+      ? { height: panelHeight, minHeight: 120, maxHeight: '90%' }
+      : { height: '42%', minHeight: '180px', maxHeight: '58%' };
 
   return (
     <div
       className={[
-        'absolute bottom-0 left-0 right-0 z-30',
-        'bg-white border-t-2 border-[#6B0D1A]',
-        'shadow-[0_-4px_20px_rgba(107,13,26,0.10)]',
-        'flex flex-col',
-        panelHeight == null ? 'transition-transform duration-[260ms] ease-[cubic-bezier(0.4,0,0.2,1)]' : '',
-        visible ? 'translate-y-0' : 'translate-y-full',
+        'shrink-0 overflow-hidden',
+        panelHeight == null ? 'transition-[height] duration-[260ms] ease-[cubic-bezier(0.4,0,0.2,1)]' : '',
       ].join(' ')}
       style={heightStyle}
     >
+    {/* Inner container carries the visual styling and relative ctx for drag handle */}
+    <div className="relative h-full flex flex-col bg-white border-t-2 border-[#6B0D1A] shadow-[0_-4px_20px_rgba(107,13,26,0.10)]">
       {/* Drag handle — grab to resize panel height */}
       <div
         onMouseDown={onPanelDragStart}
@@ -666,6 +665,7 @@ function SimulationPanel({
           sandbox="allow-scripts allow-same-origin"
         />
       </div>
+    </div>
     </div>
   );
 }
