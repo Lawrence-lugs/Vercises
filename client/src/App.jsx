@@ -30,8 +30,9 @@ function ExerciseView() {
   const [hiddenFiles, setHiddenFiles] = useState([]);
 
   // ── New-file tab editing state ────────────────────────────
-  const [allowNewFiles, setAllowNewFiles] = useState(false);
-  const [editingTab, setEditingTab]       = useState(null);
+  const [allowNewFiles, setAllowNewFiles]                       = useState(false);
+  const [allowRenameOriginalFiles, setAllowRenameOriginalFiles] = useState(false);
+  const [editingTab, setEditingTab]                             = useState(null);
   const [editingIsNew, setEditingIsNew]   = useState(false);
   const [editingValue, setEditingValue]   = useState('');
 
@@ -127,6 +128,7 @@ function ExerciseView() {
           setEnableArgs(cfg.enable_args !== false);
           setHideInstructions(!!cfg.hide_instructions);
           setAllowNewFiles(allowNew);
+          setAllowRenameOriginalFiles(cfg.allow_rename_original_files === true);
         });
     } else {
       setHideInstructions(true);
@@ -153,6 +155,7 @@ function ExerciseView() {
           }
           setEnableArgs(cfg.enable_args !== false);
           setAllowNewFiles(allowNew);
+          setAllowRenameOriginalFiles(cfg.allow_rename_original_files === true);
         });
     }
   }, [window.location.pathname]);
@@ -241,11 +244,15 @@ function ExerciseView() {
     }
     const isDuplicate = tabs.some((t, i) => i !== editingTab && t.name === name);
     if (isDuplicate) return;
+    const oldName = tabs[editingTab]?.name;
     setTabs(prev => {
       const next = [...prev];
       next[editingTab] = { ...next[editingTab], name };
       return next;
     });
+    if (oldName && oldName !== name) {
+      setSimArgs(prev => prev.split(' ').map(arg => arg === oldName ? name : arg).join(' '));
+    }
     setEditingTab(null);
     setEditingIsNew(false);
     setEditingValue('');
@@ -435,7 +442,7 @@ function ExerciseView() {
                 <button
                   key={tab.name || `tab-${i}`}
                   onClick={() => setActiveTab(i)}
-                  onDoubleClick={() => tab.userCreated && handleBeginRename(i)}
+                  onDoubleClick={() => (tab.userCreated || allowRenameOriginalFiles) && handleBeginRename(i)}
                   className={[
                     'group flex items-center gap-1 px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none whitespace-nowrap',
                     i === activeTab
