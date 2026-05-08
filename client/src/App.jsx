@@ -119,8 +119,8 @@ function ExerciseView() {
           setTabs(loadedTabs);
           setActiveTab(0);
           setInstructions(data.instructions);
-          setSimCmd(cfg.simulation_command || 'iverilog');
-          setRunCmd(cfg.run_command || './a.out');
+          setSimCmd(cfg.simulation_command !== undefined ? cfg.simulation_command : 'iverilog');
+          setRunCmd(cfg.run_command !== undefined ? cfg.run_command : './a.out');
           setHiddenFiles(cfg.hidden || []);
           if (cfg.enable_args === true) {
             setSimArgs(cfg.default_args || data.files.map(f => f.name).join(' '));
@@ -147,8 +147,8 @@ function ExerciseView() {
           setTabs(loadedTabs);
           setActiveTab(0);
           setInstructions(data.instructions);
-          setSimCmd(cfg.simulation_command || 'iverilog');
-          setRunCmd(cfg.run_command || './a.out');
+          setSimCmd(cfg.simulation_command !== undefined ? cfg.simulation_command : 'iverilog');
+          setRunCmd(cfg.run_command !== undefined ? cfg.run_command : './a.out');
           setHiddenFiles(cfg.hidden || []);
           if (cfg.enable_args === true) {
             setSimArgs(cfg.default_args || data.files.map(f => f.name).join(' '));
@@ -195,6 +195,17 @@ function ExerciseView() {
     setPanelTab('output');
     if (data.vcd_content) {
       loadVcdIntoSurfer(data.vcd_content);
+    }
+    if (data.netlist_content) {
+      setTabs(prev => {
+        const idx = prev.findIndex(t => t.name === 'netlist.v' && t.readOnly);
+        if (idx !== -1) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], content: data.netlist_content };
+          return next;
+        }
+        return [...prev, { name: 'netlist.v', content: data.netlist_content, userCreated: false, readOnly: true }];
+      });
     }
     setTimeout(() => setOutputAnim(true), 10);
     setTimeout(() => setRunCooldown(false), 1000);
@@ -449,6 +460,9 @@ function ExerciseView() {
                   ].join(' ')}
                 >
                   {tab.name}
+                  {tab.readOnly && (
+                    <span className="ml-1 text-[10px] opacity-40" title="Read-only">🔒</span>
+                  )}
                   {tab.userCreated && (
                     <span
                       role="button"
@@ -491,6 +505,7 @@ function ExerciseView() {
                   scrollBeyondLastLine: false,
                   padding: { top: 12 },
                   renderLineHighlight: 'gutter',
+                  readOnly: tabs[activeTab]?.readOnly ?? false,
                 }}
                 onChange={val => {
                   setTabs(prev => {

@@ -2,8 +2,16 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
+const util = require('util');
 const listExercises = require('./listExercises');
+
+const execFilePromise = util.promisify(execFile);
+
+// Allowed simulation commands (first token only)
+const SIM_CMD_WHITELIST = ['iverilog', 'yosys-then-ivlog'];
+// Allowed run commands: must be a relative path (e.g. ./a.out, ./build/a.out)
+const RUN_CMD_PATTERN = /^\.\//;
 
 const app = express();
 const PORT = 3000;
@@ -78,16 +86,30 @@ app.get('/api/exercise/:exercise', async (req, res) => {
 app.post('/api/simulate', async (req, res) => {
   const { files, simCmd, runCmd } = req.body;
 
-  if (!Array.isArray(files) || !simCmd || !runCmd) {
-    return res.status(400).json({ error: 'Missing or invalid fields: files, simCmd, runCmd required.' });
+  if (!Array.isArray(files)) {
+    return res.status(400).json({ error: 'Missing or invalid fields: files array required.' });
+  }
+
+  // Validate simCmd if provided
+  if (simCmd) {
+    const simBin = simCmd.trim().split(/\s+/)[0];
+    if (!SIM_CMD_WHITELIST.includes(simBin)) {
+      return res.status(400).json({ error: `Simulation command '${simBin}' is not allowed.` });
+    }
+  }
+
+  // Validate runCmd if provided
+  if (runCmd) {
+    const runBin = runCmd.trim().split(/\s+/)[0];
+    if (!RUN_CMD_PATTERN.test(runBin)) {
+      return res.status(400).json({ error: `Run command '${runBin}' is not allowed. Must be a relative path (e.g. ./a.out).` });
+    }
   }
 
   // Log for debug
-  console.log(files)
+  console.log(files);
 
-  const util = require('util');
-  const execPromise = util.promisify(exec);
-  const workDir = path.join('/tmp','vercises-tmp');
+  const workDir = path.join('/tmp', 'vercises-tmp');
   if (!fs.existsSync(workDir)) fs.mkdirSync(workDir);
   // Write files
   for (const file of files) {
@@ -97,29 +119,36 @@ app.post('/api/simulate', async (req, res) => {
   let output = '';
   let compilationFailed = false;
 
-  try {
-    // Run simulation (compile)
-    const { stdout, stderr } = await execPromise(simCmd, { cwd: workDir });
-    output += stdout;
-    output += stderr;
-  } catch (err) {
-    output += `Error: ${err.message}\n`;
-    compilationFailed = true;
+  // Run simulation/synthesis command (skipped when simCmd is empty)
+  if (simCmd) {
+    const simParts = simCmd.trim().split(/\s+/);
+    try {
+      const { stdout, stderr } = await execFilePromise(simParts[0], simParts.slice(1), { cwd: workDir });
+      output += stdout;
+      output += stderr;
+    } catch (err) {
+      output += err.stderr || '';
+      output += err.stdout || '';
+      if (!err.stderr && !err.stdout) output += `Error: ${err.message}\n`;
+      compilationFailed = true;
+    }
   }
 
   // Print the contents of the temporary directory for debugging
   console.log('Temporary directory contents:', fs.readdirSync(workDir));
 
-  if (!compilationFailed && fs.existsSync(path.join(workDir, 'a.out'))) {
+  // Run the output binary (skipped when runCmd is empty or compilation failed)
+  if (runCmd && !compilationFailed) {
+    const runParts = runCmd.trim().split(/\s+/);
     try {
-      const { stdout, stderr } = await execPromise(runCmd, { cwd: workDir });
+      const { stdout, stderr } = await execFilePromise(runParts[0], runParts.slice(1), { cwd: workDir });
       output += stdout;
       output += stderr;
     } catch (err) {
-      output += `Error: ${err.message}\n`;
+      output += err.stderr || '';
+      output += err.stdout || '';
+      if (!err.stderr && !err.stdout) output += `Error: ${err.message}\n`;
     }
-  } else {
-    output += 'Simulation command failed, skipping execution.\n';
   }
 
   // Find any .vcd file in the workDir
@@ -136,7 +165,18 @@ app.post('/api/simulate', async (req, res) => {
     }
   }
 
-  res.json({ output, vcd: vcdFile, vcd_content: vcdContent });
+  // Read gate-level netlist if produced (e.g. by yosys-then-ivlog)
+  let netlistContent = null;
+  const netlistPath = path.join(workDir, 'netlist.v');
+  if (fs.existsSync(netlistPath)) {
+    try {
+      netlistContent = fs.readFileSync(netlistPath, 'utf8');
+    } catch (e) {
+      console.error('Could not read netlist.v:', e.message);
+    }
+  }
+
+  res.json({ output, vcd: vcdFile, vcd_content: vcdContent, netlist_content: netlistContent });
 
   // Remove the entire temp directory instead of individual files
   try {

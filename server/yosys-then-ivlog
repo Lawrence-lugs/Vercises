@@ -44,7 +44,7 @@ fi
 # ── temp workspace ─────────────────────────────────────────────────────────────
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
-NETLIST="$WORK/netlist.v"
+NETLIST="$(pwd)/netlist.v"
 YOSYS_SCRIPT="$WORK/synth.ys"
 
 # ── argument parsing ───────────────────────────────────────────────────────────
