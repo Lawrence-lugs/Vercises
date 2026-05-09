@@ -4,6 +4,10 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __COMMIT_HASH__: JSON.stringify('test'),
+    __BUILD_DATE__: JSON.stringify(''),
+  },
   resolve: {
     // Redirect @monaco-editor/react to a lightweight stub file.
     // This is more reliable than vi.mock() because it happens at the Vite

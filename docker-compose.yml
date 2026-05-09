@@ -17,6 +17,7 @@ services:
       - ./client:/app/client
       - /app/client/node_modules
       - ./exercises:/app/client/public
+      - ./.git:/app/client/.git:ro
     expose:
       - "5173"
     networks:

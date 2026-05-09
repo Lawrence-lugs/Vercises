@@ -6,6 +6,49 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 
+const COMMIT_HASH = __COMMIT_HASH__;
+const BUILD_DATE = __BUILD_DATE__;
+
+function CommitBadge() {
+  return (
+    <div className="relative group">
+      <a
+        href={`https://github.com/Lawrence-lugs/Vercises/commit/${COMMIT_HASH}`}
+        target="_blank"
+        rel="noreferrer"
+        className="text-[#616161] hover:text-[#6B0D1A] transition-colors flex items-center"
+        aria-label={`Commit ${COMMIT_HASH}${BUILD_DATE ? `, built ${BUILD_DATE}` : ''}`}
+      >
+        {/* Git commit node icon */}
+        <svg
+          className="h-4 w-4"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        >
+          <circle cx="8" cy="8" r="2.5" />
+          <line x1="0" y1="8" x2="5.5" y2="8" />
+          <line x1="10.5" y1="8" x2="16" y2="8" />
+        </svg>
+      </a>
+      {/* Hover tooltip */}
+      <div className="absolute right-0 top-full mt-2 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 pointer-events-none">
+        <div className="bg-gray-800 text-white text-xs rounded px-2.5 py-1.5 whitespace-nowrap shadow-lg">
+          <span className="font-mono">{COMMIT_HASH}</span>
+          {BUILD_DATE && (
+            <>
+              <span className="text-gray-400 mx-1.5">·</span>
+              <span className="text-gray-300">{BUILD_DATE}</span>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getExerciseFromPath() {
   const match = window.location.pathname.match(/^\/exercises\/([^/]+)/);
   return match ? match[1] : null;
@@ -349,11 +392,12 @@ export function ExerciseView() {
           </span>
         </a>
 
-        <span className="text-[#616161] text-sm font-medium tracking-widest uppercase">
+        <span data-testid="exercise-label" className="text-[#616161] text-sm font-medium tracking-widest uppercase">
           {exerciseLabel}
         </span>
 
         <div className="flex items-center gap-3">
+          <CommitBadge />
           <a
             href="https://lawrence-lugs.github.io/Vercises/"
             target="_blank"
@@ -772,7 +816,7 @@ export function ExercisesList() {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] font-sans">
-      <header className="bg-white border-b border-[#dee2e6] px-6 h-12 flex items-center">
+      <header className="bg-white border-b border-[#dee2e6] px-6 h-12 flex items-center justify-between">
         <a
           href="/exercises"
           className="flex items-baseline gap-2 text-[#6B0D1A] font-bold text-lg tracking-tight no-underline hover:text-[#A52033] transition-colors"
@@ -782,6 +826,7 @@ export function ExercisesList() {
             © Lawrence Quizon
           </span>
         </a>
+        <CommitBadge />
       </header>
 
       <main className="max-w-4xl mx-auto px-6 py-10">

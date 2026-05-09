@@ -22,9 +22,9 @@ test.describe('Navigation', () => {
 
   test('navigating between two exercises updates the exercise label', async ({ page }) => {
     await page.goto('/exercises/hello_world');
-    await expect(page.getByText('Hello_world', { exact: false })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('exercise-label')).toHaveText('Hello_world', { timeout: 10_000 });
 
     await page.goto('/exercises/args_exercise');
-    await expect(page.getByText('Args_exercise', { exact: false })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('exercise-label')).toHaveText('Args_exercise', { timeout: 10_000 });
   });
 });

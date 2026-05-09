@@ -3,6 +3,8 @@ FROM node:20-bullseye
 COPY . /app/client
 
 WORKDIR /app/client
+# Allow git to run in /app/client regardless of directory ownership (volume mount uid mismatch)
+RUN git config --global --add safe.directory /app/client
 # Install dependencies only (source code will be mounted by docker-compose)
 COPY package*.json ./
 RUN npm install
