@@ -235,9 +235,14 @@ async function runSimulation({ files, simCmd, runCmd }) {
   fs.chmodSync(workDir, 0o777);
 
   try {
-    // Write all user-supplied files into the temp dir
+    // Write all user-supplied files into the temp dir.
+    // chmod to 0o666 so UID 1000 (sim container user) can overwrite generated
+    // artefacts (e.g. netlist.v) that may have been returned to the client and
+    // re-submitted on a subsequent run, having been written here first by root.
     for (const file of files) {
-      fs.writeFileSync(path.join(workDir, path.basename(file.name)), file.content);
+      const filePath = path.join(workDir, path.basename(file.name));
+      fs.writeFileSync(filePath, file.content);
+      fs.chmodSync(filePath, 0o666);
     }
 
     let output = '';
