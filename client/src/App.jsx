@@ -102,7 +102,7 @@ export function ExerciseView() {
   // ── Waveform viewer (Surfer) ──────────────────────────────
   const surferRef = useRef(null);
   const blobUrlRef = useRef(null);
-  const [surferReady, setSurferReady] = useState(false);
+  const [, setSurferReady] = useState(false);
   const [panelTab, setPanelTab] = useState('output'); // 'output' | 'waveform'
 
   // ── Draggable vertical divider ────────────────────────────
@@ -202,7 +202,7 @@ export function ExerciseView() {
           setAllowRenameOriginalFiles(cfg.allow_rename_original_files === true);
         });
     }
-  }, [window.location.pathname]);
+  }, [exercise]);
 
   // ── Run handler ───────────────────────────────────────────
   const handleRun = useCallback(async () => {
@@ -256,7 +256,7 @@ export function ExerciseView() {
     }
     setTimeout(() => setOutputAnim(true), 10);
     setTimeout(() => setRunCooldown(false), 1000);
-  }, [runCooldown, tabs, hiddenFiles, exercise, simCmd, simArgs, runCmd, enableArgs, surferReady]);
+  }, [runCooldown, tabs, hiddenFiles, exercise, simCmd, simArgs, runCmd, enableArgs]);
 
   // ── localStorage save ──────────────────────────────────────
   useEffect(() => {
@@ -392,7 +392,10 @@ export function ExerciseView() {
           </span>
         </a>
 
-        <span data-testid="exercise-label" className="text-[#616161] text-sm font-medium tracking-widest uppercase">
+        <span
+          data-testid="exercise-label"
+          className="text-[#616161] text-sm font-medium tracking-widest uppercase"
+        >
           {exerciseLabel}
         </span>
 
@@ -454,7 +457,7 @@ export function ExerciseView() {
                 remarkPlugins={[remarkGfm, remarkMath]}
                 rehypePlugins={[rehypeKatex]}
                 components={{
-                  img: ({ node, ...props }) => {
+                  img: ({ node: _node, ...props }) => {
                     let src = props.src || '';
                     if (exercise && !src.startsWith('/') && !src.startsWith('http')) {
                       src = `/exercises/${exercise}/${src}`;
@@ -629,7 +632,7 @@ export function ExerciseView() {
 // ─────────────────────────────────────────────────────────────
 function SimulationPanel({
   open,
-  mounted,
+  mounted: _mounted,
   onClose,
   isRunning,
   simCmd,
