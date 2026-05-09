@@ -1,11 +1,17 @@
 name: Deploy
 
 on:
-  push:
-    branches: ["main"]
+  # Only fires when the "Tests" workflow completes successfully on main.
+  # This prevents deploying code that has failing tests.
+  workflow_run:
+    workflows: ["Tests"]
+    types: [completed]
+    branches: [main]
 
 jobs:
   dispatch:
+    # Hard gate: skip the deploy if the test run did not pass
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:

@@ -56,7 +56,10 @@ app.get('/api/exercise/:exercise', async (req, res) => {
     if (fs.statSync(fpath).isFile()) {
       if (fname === 'instructions.md') {
         instructions = fs.readFileSync(fpath, 'utf8');
-      } else if ((fname.endsWith('.v') || fname.endsWith('.txt')) && !(config.hidden || []).includes(fname)) {
+      } else if (
+        (fname.endsWith('.v') || fname.endsWith('.txt')) &&
+        !(config.hidden || []).includes(fname)
+      ) {
         files.push({ name: fname, content: fs.readFileSync(fpath, 'utf8') });
       }
     }
@@ -80,7 +83,11 @@ app.post('/api/simulate', async (req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  cleanupOrphans();
-});
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+    cleanupOrphans();
+  });
+}
+
+module.exports = { app };

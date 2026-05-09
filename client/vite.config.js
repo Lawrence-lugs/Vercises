@@ -10,7 +10,7 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
-    allowedHosts: ['lugs-ideapad','digital.eee.upd.edu.ph'],
+    allowedHosts: ['lugs-ideapad', 'digital.eee.upd.edu.ph', 'localhost'],
     proxy: {
       '/api': {
         target: 'http://server:3000',

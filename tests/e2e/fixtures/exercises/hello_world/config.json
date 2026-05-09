@@ -1,0 +1,6 @@
+{
+  "hidden": ["tb_hello_world.v"],
+  "simulation_command": "iverilog -o a.out tb_hello_world.v hello_world.v",
+  "run_command": "vvp a.out",
+  "enable_args": false
+}

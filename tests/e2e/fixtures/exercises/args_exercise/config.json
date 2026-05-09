@@ -1,0 +1,7 @@
+{
+  "hidden": ["tb_args.v"],
+  "simulation_command": "iverilog",
+  "enable_args": true,
+  "default_args": "-o a.out tb_args.v args_module.v",
+  "run_command": "vvp a.out"
+}

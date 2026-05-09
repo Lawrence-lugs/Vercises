@@ -1,0 +1,9 @@
+{
+  "simulation_command": "iverilog",
+  "enable_args": true,
+  "default_args": "-o a.out sandbox.v",
+  "run_command": "vvp a.out",
+  "hide_instructions": true,
+  "allow_new_files": true,
+  "allow_rename_original_files": true
+}

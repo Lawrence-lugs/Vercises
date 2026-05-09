@@ -1,0 +1,51 @@
+services:
+  # Build-only service — produces the vercises-sim:latest image.
+  vercises-sim:
+    build:
+      context: .
+      dockerfile: sim/Dockerfile
+    image: vercises-sim:latest
+    profiles:
+      - build-only
+
+  vercises-client:
+    restart: unless-stopped
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    volumes:
+      - ./client:/app/client
+      - /app/client/node_modules
+      # Use fixture exercises so E2E tests see a stable, controlled exercise set.
+      # The surfer cp step is skipped in the command override below since we don't
+      # need Surfer internals in E2E (tests only assert iframe presence).
+      - ./tests/e2e/fixtures/exercises:/app/client/public
+    ports:
+      - "5173:5173"
+    networks:
+      - local
+    command: ["sh", "-c", "npm install && npm run dev"]
+
+  vercises-server:
+    restart: unless-stopped
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    volumes:
+      - ./server:/app/server
+      - /app/server/node_modules
+      # Fixture exercises mounted into server so API returns only test exercises
+      - ./tests/e2e/fixtures/exercises:/app/exercises
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp:/tmp
+    ports:
+      - "3000:3000"
+    networks:
+      local:
+        aliases:
+          - server
+    command: ["sh", "-c", "npm install && npm run start"]
+
+networks:
+  local:
+    driver: bridge

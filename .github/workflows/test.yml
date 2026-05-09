@@ -1,0 +1,276 @@
+name: Tests
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  # ── Lint ─────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint (ESLint + Prettier)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:lint
+
+  # ── Server unit tests ─────────────────────────────────────────────────────────
+  unit-server:
+    name: Unit — server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: cd server && npm ci
+      - run: npm run test:unit:server
+
+  # ── Client unit tests ─────────────────────────────────────────────────────────
+  unit-client:
+    name: Unit — client
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: cd client && npm ci
+      - run: npm run test:unit:client
+
+  # ── Docker security audit ─────────────────────────────────────────────────────
+  # Runs on every push/PR. Hard-fails if hardening invariants are removed.
+  # On PRs, additionally scans the diff for new docker.sock references and posts
+  # a warning comment so reviewers know to pay extra attention.
+  security-audit:
+    name: Docker security audit
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write   # needed to post the warning comment
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history needed for git diff
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify Docker hardening invariants
+        run: node scripts/check-docker-hardening.js
+
+      - name: Detect docker.sock-sensitive changes in PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const { execSync } = require('child_process');
+
+            // Files changed in this PR
+            const changed = execSync(
+              `git diff --name-only ${process.env.BASE_SHA} ${process.env.HEAD_SHA}`
+            ).toString().trim().split('\n').filter(Boolean);
+
+            // Files that directly use the Docker socket or control container security
+            const DOCKER_SENSITIVE = [
+              'server/simulator.js',
+              'sim/Dockerfile',
+              'docker-compose.yml',
+              'docker-compose.local.yml',
+              'docker-compose.test.yml',
+            ];
+
+            const touchedSensitive = changed.filter(f => DOCKER_SENSITIVE.includes(f));
+
+            // Also scan NEW/MODIFIED files for any unexpected docker.sock reference
+            // outside of the known-allowed files
+            const ALLOWED_SOCK_FILES = new Set([
+              'server/simulator.js',
+              'docker-compose.yml',
+              'docker-compose.local.yml',
+              'docker-compose.test.yml',
+            ]);
+
+            const newSockRefs = [];
+            for (const file of changed) {
+              if (ALLOWED_SOCK_FILES.has(file)) continue;
+              try {
+                const content = execSync(`git show ${process.env.HEAD_SHA}:${file}`, { encoding: 'utf8' });
+                if (/docker\.sock|dockerode|\/var\/run\/docker/.test(content)) {
+                  newSockRefs.push(file);
+                }
+              } catch (_) {
+                // File deleted or binary — skip
+              }
+            }
+
+            if (touchedSensitive.length === 0 && newSockRefs.length === 0) {
+              core.info('No docker.sock-sensitive files changed. No warning needed.');
+              return;
+            }
+
+            // Build the warning comment
+            let body = '## ⚠️ Docker socket security review required\n\n';
+            body += 'This PR touches files that control how Docker containers are created or secured.\n';
+            body += '**A manual review of the container security constraints is required before merging.**\n\n';
+
+            if (touchedSensitive.length > 0) {
+              body += '### Modified security-sensitive files\n';
+              for (const f of touchedSensitive) body += `- \`${f}\`\n`;
+              body += '\n';
+            }
+
+            if (newSockRefs.length > 0) {
+              body += '### ⛔ New docker.sock references detected in unexpected files\n';
+              for (const f of newSockRefs) body += `- \`${f}\`\n`;
+              body += '\nThese files were **not** previously allowed to use the Docker socket. ';
+              body += 'If this is intentional, add the file to `ALLOWED_SOCK_FILES` in `test.yml` and document the reason.\n\n';
+            }
+
+            body += '### Checklist\n';
+            body += '- [ ] `NetworkMode: none` is still enforced\n';
+            body += '- [ ] `ReadonlyRootfs: true` is still enforced\n';
+            body += '- [ ] `CapDrop: [ALL]` is still enforced\n';
+            body += '- [ ] `no-new-privileges` is still set\n';
+            body += '- [ ] Memory, CPU, and PID limits are still set\n';
+            body += '- [ ] Container user is still `1000:1000` (non-root)\n';
+            body += '- [ ] `/tmp` is still mounted noexec\n';
+            body += '\n_This comment is posted automatically by the `security-audit` CI job._';
+
+            // Find existing bot comment and update it, or post a new one
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(
+              c => c.user.type === 'Bot' && c.body.includes('Docker socket security review required')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  # ── API integration tests ────────────────────────────────────────────────────
+  api:
+    name: API integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Build vercises-sim image
+        run: docker build -t vercises-sim:latest -f sim/Dockerfile .
+
+      - name: Start server (test compose)
+        run: docker compose -f docker-compose.test.yml up -d vercises-server
+
+      - name: Stream container logs (background)
+        run: |
+          docker compose -f docker-compose.test.yml logs --follow --no-color --timestamps \
+            2>&1 > /tmp/compose-logs.txt &
+          echo $! > /tmp/compose-logs.pid
+
+      - run: npm ci
+
+      - name: Wait for server to be ready
+        run: npx wait-on -t 60000 http://localhost:3000/api/exercises
+
+      - name: Run API tests
+        run: npm run test:api
+
+      - name: Show container logs
+        if: always()
+        run: |
+          kill "$(cat /tmp/compose-logs.pid 2>/dev/null)" 2>/dev/null || true
+          echo '=== Container logs ==='
+          cat /tmp/compose-logs.txt 2>/dev/null || echo '(no logs captured)'
+
+      - name: Stop server
+        if: always()
+        run: docker compose -f docker-compose.test.yml down
+
+  # ── Playwright E2E tests ─────────────────────────────────────────────────────
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Build vercises-sim image
+        run: docker build -t vercises-sim:latest -f sim/Dockerfile .
+
+      - name: Start full test stack
+        run: docker compose -f docker-compose.test.yml up -d
+
+      - name: Stream container logs (background)
+        run: |
+          docker compose -f docker-compose.test.yml logs --follow --no-color --timestamps \
+            2>&1 > /tmp/compose-logs.txt &
+          echo $! > /tmp/compose-logs.pid
+
+      - run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for stack to be ready
+        run: |
+          npx wait-on -t 120000 http://localhost:3000/api/exercises
+          npx wait-on -t 120000 tcp:localhost:5173
+
+      - name: Run E2E tests (chromium project only, excludes smoke-real)
+        run: npx playwright test --project=chromium
+
+      - name: Show container logs
+        if: always()
+        run: |
+          kill "$(cat /tmp/compose-logs.pid 2>/dev/null)" 2>/dev/null || true
+          echo '=== Container logs ==='
+          cat /tmp/compose-logs.txt 2>/dev/null || echo '(no logs captured)'
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Stop stack
+        if: always()
+        run: docker compose -f docker-compose.test.yml down

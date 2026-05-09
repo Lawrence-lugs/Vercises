@@ -1,3 +1,4 @@
 .agents/
 # Surfer WASM files are copied here at container startup from the built image
 exercises/surfer/
+node_modules/

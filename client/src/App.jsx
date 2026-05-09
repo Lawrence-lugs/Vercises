@@ -23,18 +23,18 @@ export default function App() {
 // ─────────────────────────────────────────────────────────────
 // Main exercise view
 // ─────────────────────────────────────────────────────────────
-function ExerciseView() {
+export function ExerciseView() {
   // ── File / editor state ──────────────────────────────────
-  const [tabs, setTabs]               = useState([]);
-  const [activeTab, setActiveTab]     = useState(0);
+  const [tabs, setTabs] = useState([]);
+  const [activeTab, setActiveTab] = useState(0);
   const [hiddenFiles, setHiddenFiles] = useState([]);
 
   // ── New-file tab editing state ────────────────────────────
-  const [allowNewFiles, setAllowNewFiles]                       = useState(false);
+  const [allowNewFiles, setAllowNewFiles] = useState(false);
   const [allowRenameOriginalFiles, setAllowRenameOriginalFiles] = useState(false);
-  const [editingTab, setEditingTab]                             = useState(null);
-  const [editingIsNew, setEditingIsNew]   = useState(false);
-  const [editingValue, setEditingValue]   = useState('');
+  const [editingTab, setEditingTab] = useState(null);
+  const [editingIsNew, setEditingIsNew] = useState(false);
+  const [editingValue, setEditingValue] = useState('');
 
   // ── Left pane ─────────────────────────────────────────────
   const [hideInstructions, setHideInstructions] = useState(false);
@@ -43,31 +43,31 @@ function ExerciseView() {
   const [instructions, setInstructions] = useState('');
 
   // ── Simulation state ─────────────────────────────────────
-  const [simCmd, setSimCmd]           = useState('iverilog');
-  const [enableArgs, setEnableArgs]   = useState(true);
-  const [simArgs, setSimArgs]         = useState('');
-  const [runCmd, setRunCmd]           = useState('./a.out');
+  const [simCmd, setSimCmd] = useState('iverilog');
+  const [enableArgs, setEnableArgs] = useState(true);
+  const [simArgs, setSimArgs] = useState('');
+  const [runCmd, setRunCmd] = useState('./a.out');
   const [runCooldown, setRunCooldown] = useState(false);
-  const [output, setOutput]           = useState('');
-  const [outputAnim, setOutputAnim]   = useState(false);
-  const [isRunning, setIsRunning]     = useState(false);
+  const [output, setOutput] = useState('');
+  const [outputAnim, setOutputAnim] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
 
   // ── Slide-up simulation panel ─────────────────────────────
-  const [simOpen, setSimOpen]       = useState(false);
+  const [simOpen, setSimOpen] = useState(false);
   const [simMounted, setSimMounted] = useState(false);
 
   // ── Waveform viewer (Surfer) ──────────────────────────────
-  const surferRef    = useRef(null);
-  const blobUrlRef   = useRef(null);
-  const [surferReady, setSurferReady]   = useState(false);
-  const [panelTab, setPanelTab]         = useState('output'); // 'output' | 'waveform'
+  const surferRef = useRef(null);
+  const blobUrlRef = useRef(null);
+  const [surferReady, setSurferReady] = useState(false);
+  const [panelTab, setPanelTab] = useState('output'); // 'output' | 'waveform'
 
   // ── Draggable vertical divider ────────────────────────────
-  const [dividerX, setDividerX] = useState(Math.round(window.innerWidth * 0.40));
-  const dragging        = useRef(false);
-  const panelDragging   = useRef(false);
-  const containerRef    = useRef(null);
-  const rightPaneRef    = useRef(null);
+  const [dividerX, setDividerX] = useState(Math.round(window.innerWidth * 0.4));
+  const dragging = useRef(false);
+  const panelDragging = useRef(false);
+  const containerRef = useRef(null);
+  const rightPaneRef = useRef(null);
   const editingActionRef = useRef(false);
 
   // ── Panel height (px) — draggable ─────────────────────────
@@ -92,28 +92,27 @@ function ExerciseView() {
       URL.revokeObjectURL(blobUrlRef.current);
       blobUrlRef.current = null;
     }
-    const blob    = new Blob([vcdText], { type: 'text/plain' });
+    const blob = new Blob([vcdText], { type: 'text/plain' });
     const blobUrl = URL.createObjectURL(blob);
     blobUrlRef.current = blobUrl;
-    surferRef.current?.contentWindow?.postMessage(
-      { command: 'LoadUrl', url: blobUrl },
-      '*'
-    );
+    surferRef.current?.contentWindow?.postMessage({ command: 'LoadUrl', url: blobUrl }, '*');
   }
 
   // ── Load exercise data ────────────────────────────────────
   useEffect(() => {
     if (exercise) {
       fetch(`/api/exercise/${exercise}`)
-        .then(r => r.json())
-        .then(data => {
+        .then((r) => r.json())
+        .then((data) => {
           const cfg = data.config || {};
           const allowNew = cfg.allow_new_files === true;
-          let loadedTabs = data.files.map(f => ({ ...f, userCreated: false }));
+          let loadedTabs = data.files.map((f) => ({ ...f, userCreated: false }));
           if (allowNew) {
             const stored = localStorage.getItem(`vercises-session-${exercise}`);
             if (stored) {
-              try { loadedTabs = JSON.parse(stored).tabs; } catch (_) {}
+              try {
+                loadedTabs = JSON.parse(stored).tabs;
+              } catch (_) {}
             }
           }
           setTabs(loadedTabs);
@@ -123,7 +122,7 @@ function ExerciseView() {
           setRunCmd(cfg.run_command !== undefined ? cfg.run_command : './a.out');
           setHiddenFiles(cfg.hidden || []);
           if (cfg.enable_args === true) {
-            setSimArgs(cfg.default_args || data.files.map(f => f.name).join(' '));
+            setSimArgs(cfg.default_args || data.files.map((f) => f.name).join(' '));
           }
           setEnableArgs(cfg.enable_args !== false);
           setHideInstructions(!!cfg.hide_instructions);
@@ -133,15 +132,17 @@ function ExerciseView() {
     } else {
       setHideInstructions(true);
       fetch('/api/exercise/freeplay')
-        .then(r => r.json())
-        .then(data => {
+        .then((r) => r.json())
+        .then((data) => {
           const cfg = data.config || {};
           const allowNew = cfg.allow_new_files === true;
-          let loadedTabs = data.files.map(f => ({ ...f, userCreated: false }));
+          let loadedTabs = data.files.map((f) => ({ ...f, userCreated: false }));
           if (allowNew) {
             const stored = localStorage.getItem('vercises-session-freeplay');
             if (stored) {
-              try { loadedTabs = JSON.parse(stored).tabs; } catch (_) {}
+              try {
+                loadedTabs = JSON.parse(stored).tabs;
+              } catch (_) {}
             }
           }
           setTabs(loadedTabs);
@@ -151,7 +152,7 @@ function ExerciseView() {
           setRunCmd(cfg.run_command !== undefined ? cfg.run_command : './a.out');
           setHiddenFiles(cfg.hidden || []);
           if (cfg.enable_args === true) {
-            setSimArgs(cfg.default_args || data.files.map(f => f.name).join(' '));
+            setSimArgs(cfg.default_args || data.files.map((f) => f.name).join(' '));
           }
           setEnableArgs(cfg.enable_args !== false);
           setAllowNewFiles(allowNew);
@@ -168,11 +169,11 @@ function ExerciseView() {
     setSimMounted(true);
     setSimOpen(true);
 
-    const files = tabs.map(t => ({ name: t.name, content: t.content }));
+    const files = tabs.map((t) => ({ name: t.name, content: t.content }));
 
     if (hiddenFiles.length > 0 && exercise) {
       const extra = await Promise.all(
-        hiddenFiles.map(async fname => {
+        hiddenFiles.map(async (fname) => {
           const res = await fetch(`/exercises/${exercise}/${fname}`);
           const content = await res.text();
           return { name: fname, content };
@@ -197,14 +198,17 @@ function ExerciseView() {
       loadVcdIntoSurfer(data.vcd_content);
     }
     if (data.netlist_content) {
-      setTabs(prev => {
-        const idx = prev.findIndex(t => t.name === 'netlist.v' && t.readOnly);
+      setTabs((prev) => {
+        const idx = prev.findIndex((t) => t.name === 'netlist.v' && t.readOnly);
         if (idx !== -1) {
           const next = [...prev];
           next[idx] = { ...next[idx], content: data.netlist_content };
           return next;
         }
-        return [...prev, { name: 'netlist.v', content: data.netlist_content, userCreated: false, readOnly: true }];
+        return [
+          ...prev,
+          { name: 'netlist.v', content: data.netlist_content, userCreated: false, readOnly: true },
+        ];
       });
     }
     setTimeout(() => setOutputAnim(true), 10);
@@ -221,7 +225,7 @@ function ExerciseView() {
   // ── New-file tab handlers ─────────────────────────────────
   const handleAddTab = useCallback(() => {
     const newIdx = tabs.length;
-    setTabs(prev => [...prev, { name: '', content: '', userCreated: true }]);
+    setTabs((prev) => [...prev, { name: '', content: '', userCreated: true }]);
     setActiveTab(newIdx);
     setEditingTab(newIdx);
     setEditingIsNew(true);
@@ -229,22 +233,25 @@ function ExerciseView() {
   }, [tabs.length]);
 
   const handleDeleteTab = useCallback((i) => {
-    setTabs(prev => prev.filter((_, idx) => idx !== i));
-    setActiveTab(prev => (prev >= i && prev > 0 ? prev - 1 : prev));
+    setTabs((prev) => prev.filter((_, idx) => idx !== i));
+    setActiveTab((prev) => (prev >= i && prev > 0 ? prev - 1 : prev));
   }, []);
 
-  const handleBeginRename = useCallback((i) => {
-    setEditingTab(i);
-    setEditingIsNew(false);
-    setEditingValue(tabs[i]?.name ?? '');
-  }, [tabs]);
+  const handleBeginRename = useCallback(
+    (i) => {
+      setEditingTab(i);
+      setEditingIsNew(false);
+      setEditingValue(tabs[i]?.name ?? '');
+    },
+    [tabs]
+  );
 
   const handleCommitEdit = useCallback(() => {
     const name = editingValue.trim();
     if (!name) {
       if (editingIsNew) {
-        setTabs(prev => prev.filter((_, i) => i !== editingTab));
-        setActiveTab(prev => Math.max(0, prev - 1));
+        setTabs((prev) => prev.filter((_, i) => i !== editingTab));
+        setActiveTab((prev) => Math.max(0, prev - 1));
       }
       setEditingTab(null);
       setEditingIsNew(false);
@@ -254,13 +261,18 @@ function ExerciseView() {
     const isDuplicate = tabs.some((t, i) => i !== editingTab && t.name === name);
     if (isDuplicate) return;
     const oldName = tabs[editingTab]?.name;
-    setTabs(prev => {
+    setTabs((prev) => {
       const next = [...prev];
       next[editingTab] = { ...next[editingTab], name };
       return next;
     });
     if (oldName && oldName !== name) {
-      setSimArgs(prev => prev.split(' ').map(arg => arg === oldName ? name : arg).join(' '));
+      setSimArgs((prev) =>
+        prev
+          .split(' ')
+          .map((arg) => (arg === oldName ? name : arg))
+          .join(' ')
+      );
     }
     setEditingTab(null);
     setEditingIsNew(false);
@@ -269,8 +281,8 @@ function ExerciseView() {
 
   const handleCancelEdit = useCallback(() => {
     if (editingIsNew) {
-      setTabs(prev => prev.filter((_, i) => i !== editingTab));
-      setActiveTab(prev => Math.max(0, prev - 1));
+      setTabs((prev) => prev.filter((_, i) => i !== editingTab));
+      setActiveTab((prev) => Math.max(0, prev - 1));
     }
     setEditingTab(null);
     setEditingIsNew(false);
@@ -284,7 +296,7 @@ function ExerciseView() {
 
   // ── Divider drag (horizontal) ──────────────────────────────
   useEffect(() => {
-    const onMove = e => {
+    const onMove = (e) => {
       if (dragging.current) {
         const cw = containerRef.current?.offsetWidth || window.innerWidth;
         setDividerX(Math.max(260, Math.min(e.clientX, cw - 300)));
@@ -300,7 +312,7 @@ function ExerciseView() {
       }
     };
     const onUp = () => {
-      dragging.current     = false;
+      dragging.current = false;
       panelDragging.current = false;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
@@ -315,7 +327,7 @@ function ExerciseView() {
 
   const startPanelDrag = () => {
     panelDragging.current = true;
-    document.body.style.cursor     = 'ns-resize';
+    document.body.style.cursor = 'ns-resize';
     document.body.style.userSelect = 'none';
   };
 
@@ -325,7 +337,6 @@ function ExerciseView() {
 
   return (
     <div className="flex flex-col h-screen bg-white text-gray-800 font-sans overflow-hidden">
-
       {/* ── Top Navbar ──────────────────────────────────────── */}
       <header className="flex items-center justify-between h-12 px-5 bg-white border-b border-[#dee2e6] shrink-0 z-20">
         <a
@@ -338,60 +349,62 @@ function ExerciseView() {
           </span>
         </a>
 
-
         <span className="text-[#616161] text-sm font-medium tracking-widest uppercase">
           {exerciseLabel}
         </span>
 
         <div className="flex items-center gap-3">
-        <a
-          href="https://lawrence-lugs.github.io/Vercises/"
-          target="_blank"
-          rel="noreferrer"
-          className="text-[#616161] hover:text-[#6B0D1A] text-sm transition-colors"
-          title="Documentation"
-        >
-          Docs ↗
-        </a>
-        <button
-          onClick={handleRun}
-          disabled={runCooldown}
-          className={[
-            'flex items-center gap-2 px-4 py-1.5 rounded text-sm font-semibold text-white transition-colors',
-            runCooldown
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-[#6B0D1A] hover:bg-[#A52033] cursor-pointer',
-          ].join(' ')}
-        >
-          {isRunning ? (
-            <>
-              <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-              </svg>
-              Running…
-            </>
-          ) : (
-            <>
-              <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
-                <path d="M3 2.5l10 5.5-10 5.5V2.5z" />
-              </svg>
-              Run
-            </>
-          )}
-        </button>
+          <a
+            href="https://lawrence-lugs.github.io/Vercises/"
+            target="_blank"
+            rel="noreferrer"
+            className="text-[#616161] hover:text-[#6B0D1A] text-sm transition-colors"
+            title="Documentation"
+          >
+            Docs ↗
+          </a>
+          <button
+            onClick={handleRun}
+            disabled={runCooldown}
+            className={[
+              'flex items-center gap-2 px-4 py-1.5 rounded text-sm font-semibold text-white transition-colors',
+              runCooldown
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-[#6B0D1A] hover:bg-[#A52033] cursor-pointer',
+            ].join(' ')}
+          >
+            {isRunning ? (
+              <>
+                <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Running…
+              </>
+            ) : (
+              <>
+                <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+                  <path d="M3 2.5l10 5.5-10 5.5V2.5z" />
+                </svg>
+                Run
+              </>
+            )}
+          </button>
         </div>
       </header>
 
       {/* ── Main split area ──────────────────────────────────── */}
       <div ref={containerRef} className="flex flex-1 relative overflow-hidden">
-
         {/* Left: Instructions */}
         {!hideInstructions && (
-          <div
-            className="h-full overflow-y-auto bg-white shrink-0"
-            style={{ width: dividerX }}
-          >
+          <div className="h-full overflow-y-auto bg-white shrink-0" style={{ width: dividerX }}>
             <div className="md-prose px-12 py-10 max-w-2xl">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm, remarkMath]}
@@ -402,7 +415,9 @@ function ExerciseView() {
                     if (exercise && !src.startsWith('/') && !src.startsWith('http')) {
                       src = `/exercises/${exercise}/${src}`;
                     }
-                    return <img {...props} src={src} className="max-w-full h-auto rounded-md my-4" />;
+                    return (
+                      <img {...props} src={src} className="max-w-full h-auto rounded-md my-4" />
+                    );
                   },
                 }}
               >
@@ -416,13 +431,17 @@ function ExerciseView() {
         {!hideInstructions && (
           <div
             className="w-1.5 shrink-0 bg-[#dee2e6] hover:bg-[#A52033] cursor-col-resize transition-colors z-10"
-            onMouseDown={() => { dragging.current = true; }}
+            onMouseDown={() => {
+              dragging.current = true;
+            }}
           />
         )}
 
         {/* Right: Editor + slide-up sim panel */}
-        <div ref={rightPaneRef} className="flex flex-col flex-1 h-full bg-[#f8f9fa] overflow-hidden relative">
-
+        <div
+          ref={rightPaneRef}
+          className="flex flex-col flex-1 h-full bg-[#f8f9fa] overflow-hidden relative"
+        >
           {/* Tab bar */}
           <div className="flex bg-white border-b border-[#dee2e6] shrink-0 items-stretch">
             {tabs.map((tab, i) => {
@@ -432,13 +451,22 @@ function ExerciseView() {
                     key={`tab-input-${i}`}
                     autoFocus
                     value={editingValue}
-                    onChange={e => setEditingValue(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter')  { editingActionRef.current = true; handleCommitEdit(); }
-                      if (e.key === 'Escape') { editingActionRef.current = true; handleCancelEdit(); }
+                    onChange={(e) => setEditingValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        editingActionRef.current = true;
+                        handleCommitEdit();
+                      }
+                      if (e.key === 'Escape') {
+                        editingActionRef.current = true;
+                        handleCancelEdit();
+                      }
                     }}
                     onBlur={() => {
-                      if (editingActionRef.current) { editingActionRef.current = false; return; }
+                      if (editingActionRef.current) {
+                        editingActionRef.current = false;
+                        return;
+                      }
                       handleCommitEdit();
                     }}
                     className="px-3 py-2.5 text-sm font-medium font-mono border-b-2 border-[#6B0D1A] text-[#6B0D1A] bg-white focus:outline-none w-32 min-w-[80px]"
@@ -451,7 +479,9 @@ function ExerciseView() {
                 <button
                   key={tab.name || `tab-${i}`}
                   onClick={() => setActiveTab(i)}
-                  onDoubleClick={() => (tab.userCreated || allowRenameOriginalFiles) && handleBeginRename(i)}
+                  onDoubleClick={() =>
+                    (tab.userCreated || allowRenameOriginalFiles) && handleBeginRename(i)
+                  }
                   className={[
                     'group flex items-center gap-1 px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none whitespace-nowrap',
                     i === activeTab
@@ -461,12 +491,17 @@ function ExerciseView() {
                 >
                   {tab.name}
                   {tab.readOnly && (
-                    <span className="ml-1 text-[10px] opacity-40" title="Read-only">🔒</span>
+                    <span className="ml-1 text-[10px] opacity-40" title="Read-only">
+                      🔒
+                    </span>
                   )}
                   {tab.userCreated && (
                     <span
                       role="button"
-                      onClick={e => { e.stopPropagation(); handleDeleteTab(i); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteTab(i);
+                      }}
                       className="ml-1 text-[#616161] hover:text-[#6B0D1A] text-base leading-none opacity-0 group-hover:opacity-100 transition-opacity"
                       aria-label={`Close ${tab.name}`}
                     >
@@ -508,9 +543,9 @@ function ExerciseView() {
                   renderLineHighlight: 'gutter',
                   readOnly: tabs[activeTab]?.readOnly ?? false,
                 }}
-                onChange={val => {
+                onChange={(val) => {
                   if (tabs[activeTab]?.readOnly) return;
-                  setTabs(prev => {
+                  setTabs((prev) => {
                     const next = [...prev];
                     next[activeTab] = { ...next[activeTab], content: val };
                     return next;
@@ -549,12 +584,22 @@ function ExerciseView() {
 // Simulation slide-up panel (absolute inside right column)
 // ─────────────────────────────────────────────────────────────
 function SimulationPanel({
-  open, mounted, onClose, isRunning,
-  simCmd, runCmd, enableArgs, simArgs, onSimArgsChange,
-  output, outputAnim,
-  panelTab, onPanelTabChange,
+  open,
+  mounted,
+  onClose,
+  isRunning,
+  simCmd,
+  runCmd,
+  enableArgs,
+  simArgs,
+  onSimArgsChange,
+  output,
+  outputAnim,
+  panelTab,
+  onPanelTabChange,
   surferRef,
-  panelHeight, onPanelDragStart,
+  panelHeight,
+  onPanelDragStart,
 }) {
   const [animated, setAnimated] = useState(false);
 
@@ -577,112 +622,126 @@ function SimulationPanel({
     <div
       className={[
         'shrink-0 overflow-hidden',
-        panelHeight == null ? 'transition-[height] duration-[260ms] ease-[cubic-bezier(0.4,0,0.2,1)]' : '',
+        panelHeight == null
+          ? 'transition-[height] duration-[260ms] ease-[cubic-bezier(0.4,0,0.2,1)]'
+          : '',
       ].join(' ')}
       style={heightStyle}
     >
-    {/* Inner container carries the visual styling and relative ctx for drag handle */}
-    <div className="relative h-full flex flex-col bg-white border-t-2 border-[#6B0D1A] shadow-[0_-4px_20px_rgba(107,13,26,0.10)]">
-      {/* Drag handle — grab to resize panel height */}
-      <div
-        onMouseDown={onPanelDragStart}
-        className="absolute top-0 left-0 right-0 h-1.5 cursor-ns-resize bg-transparent hover:bg-[#A52033] transition-colors z-10"
-        title="Drag to resize"
-      />
-      {/* Panel header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[#dee2e6] shrink-0 bg-white">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[#6B0D1A] font-semibold text-xs tracking-widest uppercase">
-            Simulation
-          </span>
-          <span className="text-[#dee2e6] select-none">|</span>
-          <code className="bg-[#f1f3f5] text-gray-700 text-xs px-2 py-0.5 rounded font-mono">
-            {simCmd}
-          </code>
-          {enableArgs && (
-            <input
-              value={simArgs}
-              onChange={e => onSimArgsChange(e.target.value)}
-              className="bg-[#f1f3f5] text-gray-700 text-xs px-2 py-0.5 rounded font-mono border border-[#dee2e6] focus:outline-none focus:border-[#A52033] min-w-[80px] w-40"
-              spellCheck={false}
-            />
-          )}
-          <code className="bg-[#f1f3f5] text-gray-700 text-xs px-2 py-0.5 rounded font-mono">
-            {runCmd}
-          </code>
-          {isRunning && (
-            <svg className="animate-spin h-3 w-3 text-[#A52033]" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-            </svg>
+      {/* Inner container carries the visual styling and relative ctx for drag handle */}
+      <div className="relative h-full flex flex-col bg-white border-t-2 border-[#6B0D1A] shadow-[0_-4px_20px_rgba(107,13,26,0.10)]">
+        {/* Drag handle — grab to resize panel height */}
+        <div
+          onMouseDown={onPanelDragStart}
+          className="absolute top-0 left-0 right-0 h-1.5 cursor-ns-resize bg-transparent hover:bg-[#A52033] transition-colors z-10"
+          title="Drag to resize"
+        />
+        {/* Panel header */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-[#dee2e6] shrink-0 bg-white">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[#6B0D1A] font-semibold text-xs tracking-widest uppercase">
+              Simulation
+            </span>
+            <span className="text-[#dee2e6] select-none">|</span>
+            <code className="bg-[#f1f3f5] text-gray-700 text-xs px-2 py-0.5 rounded font-mono">
+              {simCmd}
+            </code>
+            {enableArgs && (
+              <input
+                value={simArgs}
+                onChange={(e) => onSimArgsChange(e.target.value)}
+                className="bg-[#f1f3f5] text-gray-700 text-xs px-2 py-0.5 rounded font-mono border border-[#dee2e6] focus:outline-none focus:border-[#A52033] min-w-[80px] w-40"
+                spellCheck={false}
+              />
+            )}
+            <code className="bg-[#f1f3f5] text-gray-700 text-xs px-2 py-0.5 rounded font-mono">
+              {runCmd}
+            </code>
+            {isRunning && (
+              <svg className="animate-spin h-3 w-3 text-[#A52033]" viewBox="0 0 24 24" fill="none">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+            )}
+          </div>
+
+          <button
+            onClick={onClose}
+            className="text-[#616161] hover:text-[#6B0D1A] transition-colors text-xl leading-none px-1 ml-2"
+            aria-label="Close simulation panel"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Tab bar */}
+        <div className="flex border-b border-[#dee2e6] shrink-0 bg-white text-xs">
+          <button
+            onClick={() => onPanelTabChange('output')}
+            className={[
+              'px-4 py-1.5 font-medium transition-colors',
+              panelTab === 'output'
+                ? 'border-b-2 border-[#6B0D1A] text-[#6B0D1A]'
+                : 'text-[#616161] hover:text-gray-800',
+            ].join(' ')}
+          >
+            Output
+          </button>
+          <button
+            onClick={() => onPanelTabChange('waveform')}
+            className={[
+              'px-4 py-1.5 font-medium transition-colors',
+              panelTab === 'waveform'
+                ? 'border-b-2 border-[#6B0D1A] text-[#6B0D1A]'
+                : 'text-[#616161] hover:text-gray-800',
+            ].join(' ')}
+          >
+            Waveform
+          </button>
+        </div>
+
+        {/* Output tab content */}
+        <div
+          className={[
+            'flex-1 overflow-y-auto bg-[#f8f9fa] p-4',
+            panelTab === 'output' ? 'block' : 'hidden',
+          ].join(' ')}
+        >
+          {isRunning && !output ? (
+            <p className="text-[#616161] text-sm italic">Running simulation…</p>
+          ) : (
+            <pre
+              className={[
+                'output-pre font-mono text-sm text-gray-800 whitespace-pre-wrap break-words leading-relaxed m-0',
+                outputAnim ? 'output-anim' : '',
+              ].join(' ')}
+            >
+              {output || <span className="text-[#616161] italic">No output yet.</span>}
+            </pre>
           )}
         </div>
 
-        <button
-          onClick={onClose}
-          className="text-[#616161] hover:text-[#6B0D1A] transition-colors text-xl leading-none px-1 ml-2"
-          aria-label="Close simulation panel"
+        {/* Waveform tab — iframe is always in the DOM; CSS hides it when not active */}
+        <div
+          className="flex-1 overflow-hidden"
+          style={{ display: panelTab === 'waveform' ? 'block' : 'none' }}
         >
-          ×
-        </button>
+          <iframe
+            ref={surferRef}
+            src="/exercises/surfer/index.html"
+            title="Waveform Viewer"
+            className="w-full h-full border-none"
+            sandbox="allow-scripts allow-same-origin"
+          />
+        </div>
       </div>
-
-      {/* Tab bar */}
-      <div className="flex border-b border-[#dee2e6] shrink-0 bg-white text-xs">
-        <button
-          onClick={() => onPanelTabChange('output')}
-          className={[
-            'px-4 py-1.5 font-medium transition-colors',
-            panelTab === 'output'
-              ? 'border-b-2 border-[#6B0D1A] text-[#6B0D1A]'
-              : 'text-[#616161] hover:text-gray-800',
-          ].join(' ')}
-        >
-          Output
-        </button>
-        <button
-          onClick={() => onPanelTabChange('waveform')}
-          className={[
-            'px-4 py-1.5 font-medium transition-colors',
-            panelTab === 'waveform'
-              ? 'border-b-2 border-[#6B0D1A] text-[#6B0D1A]'
-              : 'text-[#616161] hover:text-gray-800',
-          ].join(' ')}
-        >
-          Waveform
-        </button>
-      </div>
-
-      {/* Output tab content */}
-      <div className={['flex-1 overflow-y-auto bg-[#f8f9fa] p-4', panelTab === 'output' ? 'block' : 'hidden'].join(' ')}>
-        {isRunning && !output ? (
-          <p className="text-[#616161] text-sm italic">Running simulation…</p>
-        ) : (
-          <pre
-            className={[
-              'output-pre font-mono text-sm text-gray-800 whitespace-pre-wrap break-words leading-relaxed m-0',
-              outputAnim ? 'output-anim' : '',
-            ].join(' ')}
-          >
-            {output || <span className="text-[#616161] italic">No output yet.</span>}
-          </pre>
-        )}
-      </div>
-
-      {/* Waveform tab — iframe is always in the DOM; CSS hides it when not active */}
-      <div
-        className="flex-1 overflow-hidden"
-        style={{ display: panelTab === 'waveform' ? 'block' : 'none' }}
-      >
-        <iframe
-          ref={surferRef}
-          src="/exercises/surfer/index.html"
-          title="Waveform Viewer"
-          className="w-full h-full border-none"
-          sandbox="allow-scripts allow-same-origin"
-        />
-      </div>
-    </div>
     </div>
   );
 }
@@ -690,19 +749,25 @@ function SimulationPanel({
 // ─────────────────────────────────────────────────────────────
 // Exercises listing page  (/exercises)
 // ─────────────────────────────────────────────────────────────
-function ExercisesList() {
+export function ExercisesList() {
   const [exercises, setExercises] = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetch('/api/exercises')
-      .then(r => {
+      .then((r) => {
         if (!r.ok) throw new Error('Failed to fetch exercises');
         return r.json();
       })
-      .then(data => { setExercises(data.exercises); setLoading(false); })
-      .catch(err  => { setError(err.message);       setLoading(false); });
+      .then((data) => {
+        setExercises(data.exercises);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
   }, []);
 
   return (
@@ -724,7 +789,7 @@ function ExercisesList() {
         <p className="text-[#616161] mb-8 text-sm">Pick an exercise to start coding in Verilog.</p>
 
         {loading && <p className="text-[#616161]">Loading…</p>}
-        {error   && <p className="text-red-600">Error: {error}</p>}
+        {error && <p className="text-red-600">Error: {error}</p>}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {exercises.map((ex, idx) => (
@@ -739,7 +804,10 @@ function ExercisesList() {
                 </h2>
                 <svg
                   className="h-4 w-4 text-[#dee2e6] group-hover:text-[#A52033] transition-colors mt-0.5 shrink-0"
-                  viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
                 >
                   <path d="M3 8h10M9 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>

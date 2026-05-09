@@ -44,7 +44,37 @@ const SIM_CMD_WHITELIST = ['iverilog', 'yosys-then-ivlog'];
 // volume that inherits noexec from Docker Desktop's WSL2 /tmp filesystem.
 // 'vvp' reads the iverilog output as data (bytecode), not as an exec()-ed binary,
 // so noexec does not apply. This is also more secure: no user-compiled ELF is ever exec()-ed.
-const RUN_CMD_WHITELIST = ['vvp'];;
+const RUN_CMD_WHITELIST = ['vvp'];
+
+/**
+ * Validate the simulation (compile) command. Throws { status: 400 } if the
+ * first token is not in SIM_CMD_WHITELIST. Safe to call with null/undefined.
+ */
+function validateSimCmd(simCmd) {
+  if (!simCmd) return;
+  const simBin = simCmd.trim().split(/\s+/)[0];
+  if (!SIM_CMD_WHITELIST.includes(simBin)) {
+    const err = new Error(`Simulation command '${simBin}' is not allowed.`);
+    err.status = 400;
+    throw err;
+  }
+}
+
+/**
+ * Validate the run command. Throws { status: 400 } if the first token is not
+ * in RUN_CMD_WHITELIST. Safe to call with null/undefined.
+ */
+function validateRunCmd(runCmd) {
+  if (!runCmd) return;
+  const runBin = runCmd.trim().split(/\s+/)[0];
+  if (!RUN_CMD_WHITELIST.includes(runBin)) {
+    const err = new Error(
+      `Run command '${runBin}' is not allowed. Allowed: ${RUN_CMD_WHITELIST.join(', ')}.`
+    );
+    err.status = 400;
+    throw err;
+  }
+}
 
 let activeSims = 0;
 
@@ -113,7 +143,11 @@ async function runContainer(cmdArray, workDir) {
   let timedOut = false;
   const killTimer = setTimeout(async () => {
     timedOut = true;
-    try { await container.kill(); } catch (_) { /* already exited */ }
+    try {
+      await container.kill();
+    } catch (_) {
+      /* already exited */
+    }
     // Killing the container closes its streams, which resolves streamDone above.
   }, TIMEOUT_MS);
 
@@ -126,12 +160,23 @@ async function runContainer(cmdArray, workDir) {
   try {
     const result = await container.wait();
     exitCode = result.StatusCode;
-  } catch (_) { /* ignore if somehow already removed */ }
+  } catch (_) {
+    /* ignore if somehow already removed */
+  }
 
-  try { await container.remove({ force: true }); } catch (_) { /* already removed */ }
+  try {
+    await container.remove({ force: true });
+  } catch (_) {
+    /* already removed */
+  }
 
   const output = parts.join('');
-  if (timedOut) return { output: output + '\nError: simulation timed out after 30 seconds\n', exitCode, timedOut };
+  if (timedOut)
+    return {
+      output: output + '\nError: simulation timed out after 30 seconds\n',
+      exitCode,
+      timedOut,
+    };
   return { output, exitCode, timedOut };
 }
 
@@ -146,8 +191,12 @@ async function cleanupOrphans() {
     });
     for (const info of containers) {
       const c = docker.getContainer(info.Id);
-      try { await c.kill(); } catch (_) {}
-      try { await c.remove({ force: true }); } catch (_) {}
+      try {
+        await c.kill();
+      } catch (_) {}
+      try {
+        await c.remove({ force: true });
+      } catch (_) {}
     }
     if (containers.length > 0) {
       console.log(`[simulator] Cleaned up ${containers.length} orphan simulation container(s)`);
@@ -166,25 +215,8 @@ async function cleanupOrphans() {
  * @throws {{ status: 400, message: string }} on validation errors
  */
 async function runSimulation({ files, simCmd, runCmd }) {
-  // Validate simCmd
-  if (simCmd) {
-    const simBin = simCmd.trim().split(/\s+/)[0];
-    if (!SIM_CMD_WHITELIST.includes(simBin)) {
-      const err = new Error(`Simulation command '${simBin}' is not allowed.`);
-      err.status = 400;
-      throw err;
-    }
-  }
-
-  // Validate runCmd
-  if (runCmd) {
-    const runBin = runCmd.trim().split(/\s+/)[0];
-    if (!RUN_CMD_WHITELIST.includes(runBin)) {
-      const err = new Error(`Run command '${runBin}' is not allowed. Allowed: ${RUN_CMD_WHITELIST.join(', ')}.`);
-      err.status = 400;
-      throw err;
-    }
-  }
+  validateSimCmd(simCmd);
+  validateRunCmd(runCmd);
 
   // Concurrency gate
   if (activeSims >= MAX_CONCURRENT) {
@@ -232,19 +264,25 @@ async function runSimulation({ files, simCmd, runCmd }) {
     const vcdFile = findVcdFile(workDir);
     let vcdContent = null;
     if (vcdFile) {
-      try { vcdContent = fs.readFileSync(path.join(workDir, vcdFile), 'utf8'); } catch (_) {}
+      try {
+        vcdContent = fs.readFileSync(path.join(workDir, vcdFile), 'utf8');
+      } catch (_) {}
     }
 
     let netlistContent = null;
     const netlistPath = path.join(workDir, 'netlist.v');
     if (fs.existsSync(netlistPath)) {
-      try { netlistContent = fs.readFileSync(netlistPath, 'utf8'); } catch (_) {}
+      try {
+        netlistContent = fs.readFileSync(netlistPath, 'utf8');
+      } catch (_) {}
     }
 
     return { output, vcd: vcdFile, vcd_content: vcdContent, netlist_content: netlistContent };
   } finally {
     activeSims--;
-    try { fs.rmSync(workDir, { recursive: true, force: true }); } catch (_) {}
+    try {
+      fs.rmSync(workDir, { recursive: true, force: true });
+    } catch (_) {}
   }
 }
 
@@ -255,4 +293,11 @@ function findVcdFile(dir) {
   return null;
 }
 
-module.exports = { runSimulation, cleanupOrphans };
+module.exports = {
+  runSimulation,
+  cleanupOrphans,
+  validateSimCmd,
+  validateRunCmd,
+  SIM_CMD_WHITELIST,
+  RUN_CMD_WHITELIST,
+};

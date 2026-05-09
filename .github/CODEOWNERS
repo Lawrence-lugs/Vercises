@@ -1,0 +1,20 @@
+# CODEOWNERS — files requiring owner review on every pull request
+#
+# Docker socket and container security are the primary attack surface of this
+# project. Any change to these files must be reviewed by @Lawrence-lugs before
+# merging, in addition to passing the automated security-audit CI job.
+
+# Container security constraints
+/server/simulator.js                  @Lawrence-lugs
+/sim/Dockerfile                       @Lawrence-lugs
+
+# Compose files that mount the Docker socket
+/docker-compose.yml                   @Lawrence-lugs
+/docker-compose.local.yml             @Lawrence-lugs
+/docker-compose.test.yml              @Lawrence-lugs
+
+# The automated hardening check itself
+/scripts/check-docker-hardening.js    @Lawrence-lugs
+
+# CI workflows — prevent silently disabling the security-audit job
+/.github/workflows/                   @Lawrence-lugs

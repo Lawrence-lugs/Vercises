@@ -1,0 +1,5 @@
+{
+  "simulation_command": "iverilog -o a.out broken.v",
+  "run_command": "vvp a.out",
+  "enable_args": false
+}
