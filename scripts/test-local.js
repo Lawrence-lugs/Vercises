@@ -26,6 +26,7 @@ const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..');
 const isWindows = process.platform === 'win32';
+const runSmokeReal = process.argv.includes('--smoke-real');
 
 let dockerStarted = false;
 
@@ -93,6 +94,7 @@ try {
   run('npx', ['wait-on', '-t', '120000', 'tcp:localhost:5173']);
   run('npx', ['playwright', 'install', '--with-deps', 'chromium']);
   run('npx', ['playwright', 'test', '--project=chromium']);
+  if (runSmokeReal) run('npx', ['playwright', 'test', '--project=smoke-real']);
 } catch (err) {
   console.error(`\n\x1b[31m✗  ${err.message}\x1b[0m`);
   failed = true;
