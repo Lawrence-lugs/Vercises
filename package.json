@@ -7,6 +7,7 @@
     "test:unit:client": "vitest --config vitest.client.config.js run",
     "test:api": "vitest --config vitest.api.config.js run",
     "test:e2e": "playwright test",
+    "test:local": "node scripts/test-local.js",
     "test": "npm run test:lint && npm run test:unit:server && npm run test:unit:client && npm run test:api && npm run test:e2e"
   },
   "devDependencies": {
