@@ -16,14 +16,21 @@ test.describe('Session persistence (localStorage)', () => {
     await page.goto(`/exercises/${EXERCISE}`);
     await expect(page.locator('.monaco-editor')).toBeVisible({ timeout: 15_000 });
 
-    // Click into the Monaco editor and replace all content
-    const editor = page.locator('.monaco-editor').first();
-    await editor.click();
-    await page.keyboard.press('Control+A');
-    await page.keyboard.type(EDITED_CONTENT);
+    // Set content via Monaco's JS API — keyboard.type() is unreliable with Monaco
+    // because Monaco processes key events asynchronously and drops characters at
+    // default speed. setValue() on the model is synchronous and always correct.
+    await page.evaluate((content) => {
+      const models = window.monaco?.editor?.getModels();
+      if (!models || models.length === 0) throw new Error('No Monaco models found');
+      models[0].setValue(content);
+    }, EDITED_CONTENT);
 
-    // Wait a tick for the onChange handler to fire and persist to localStorage
-    await page.waitForTimeout(500);
+    // Wait for React's onChange → setTabs → useEffect chain to write localStorage
+    await page.waitForFunction(
+      (key) => localStorage.getItem(key) !== null,
+      `vercises-session-${EXERCISE}`,
+      { timeout: 5000 }
+    );
 
     // Reload the page
     await page.reload();
