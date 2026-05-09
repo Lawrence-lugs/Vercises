@@ -1,0 +1,4 @@
+{
+    "enable_args": true,
+    "run_command": "vvp a.out"
+}

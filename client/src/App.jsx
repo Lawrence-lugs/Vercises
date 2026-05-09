@@ -493,6 +493,7 @@ function ExerciseView() {
           {tabs.length > 0 && (
             <div className="flex-1 overflow-hidden">
               <MonacoEditor
+                key={tabs[activeTab]?.name ?? activeTab}
                 height="100%"
                 theme="vs"
                 language="verilog"
@@ -508,6 +509,7 @@ function ExerciseView() {
                   readOnly: tabs[activeTab]?.readOnly ?? false,
                 }}
                 onChange={val => {
+                  if (tabs[activeTab]?.readOnly) return;
                   setTabs(prev => {
                     const next = [...prev];
                     next[activeTab] = { ...next[activeTab], content: val };
