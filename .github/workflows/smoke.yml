@@ -1,0 +1,68 @@
+name: Smoke — real exercises
+
+on:
+  # Fires when the "Tests" workflow completes successfully on main.
+  # Runs in parallel with the Deploy workflow — does NOT block it.
+  workflow_run:
+    workflows: ["Tests"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  smoke-real:
+    # Only run if the test suite passed (same guard as deploy.yml)
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    name: Playwright smoke — real exercises
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Build vercises-sim image
+        run: docker build -t vercises-sim:latest -f sim/Dockerfile .
+
+      - name: Start smoke stack (real exercises)
+        run: docker compose -f docker-compose.smoke.yml up -d
+
+      - name: Stream container logs (background)
+        run: |
+          docker compose -f docker-compose.smoke.yml logs --follow --no-color --timestamps \
+            2>&1 > /tmp/compose-logs.txt &
+          echo $! > /tmp/compose-logs.pid
+
+      - run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for stack to be ready
+        run: |
+          npx wait-on -t 120000 http://localhost:3000/api/exercises
+          npx wait-on -t 120000 tcp:localhost:5173
+
+      - name: Run smoke-real tests
+        run: npx playwright test --project=smoke-real
+
+      - name: Show container logs
+        if: always()
+        run: |
+          kill "$(cat /tmp/compose-logs.pid 2>/dev/null)" 2>/dev/null || true
+          echo '=== Container logs ==='
+          cat /tmp/compose-logs.txt 2>/dev/null || echo '(no logs captured)'
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-real-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Stop stack
+        if: always()
+        run: docker compose -f docker-compose.smoke.yml down
