@@ -1,0 +1,6 @@
+{
+  "hidden": ["tb_and2.v"],
+  "simulation_command": "yosys-then-ivlog and2.v -- tb_and2.v",
+  "run_command": "vvp a.out",
+  "enable_args": false
+}
