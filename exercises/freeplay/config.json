@@ -1,6 +1,6 @@
 {
     "hidden": [],
-    "simulation_command": "",
+    "simulation_command": "iverilog",
     "default_args": "",
     "enable_args": true,
     "run_command": "vvp a.out",
