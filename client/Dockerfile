@@ -10,8 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends git curl build-
  && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable \
  && . "$HOME/.cargo/env" \
  && rustup target add wasm32-unknown-unknown \
- && git clone --depth 1 --branch v0.7.0 https://gitlab.com/surfer-project/surfer.git /tmp/surfer \
+ && git clone --branch v0.7.0 https://gitlab.com/surfer-project/surfer.git /tmp/surfer \
  && cd /tmp/surfer \
+ && git submodule update --init --recursive \
  && . "$HOME/.cargo/env" && trunk build --release \
  && mkdir -p /app/surfer-static && cp -r dist/. /app/surfer-static/ \
  && sed -i 's|/\*SURFER_SETUP_HOOKS\*/|window.parent.postMessage({command:"surfer-loaded"},"*");|g' /app/surfer-static/index.html
